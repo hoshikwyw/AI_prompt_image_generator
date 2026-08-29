@@ -1,0 +1,14 @@
+{
+  "name": "image-probe",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Phase 0: compare Cloudflare FLUX.2 klein vs Gemini for identity-preserving photo restyling.",
+  "scripts": {
+    "probe": "node --env-file=.env src/probe.ts"
+  },
+  "dependencies": {
+    "@google/genai": "^1.30.0",
+    "sharp": "^0.34.4"
+  }
+}
