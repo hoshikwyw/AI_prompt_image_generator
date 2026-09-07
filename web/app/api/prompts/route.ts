@@ -1,32 +1,11 @@
-import {
-  CATEGORIES,
-  SORTS,
-  tagCounts,
-  validateDraft,
-  type Category,
-  type PromptFilter,
-  type SortKey,
-} from "@/lib/prompt";
+import { parseFilter, tagCounts, validateDraft } from "@/lib/prompt";
 import { createPrompt, listPrompts } from "@/lib/store";
 
 export const runtime = "nodejs";
 
-/** Query junk is ignored rather than rejected — a bad filter shows everything. */
-function filterFromQuery(url: URL): PromptFilter {
-  const category = url.searchParams.get("category");
-  const sort = url.searchParams.get("sort");
-  return {
-    q: url.searchParams.get("q") ?? undefined,
-    category: CATEGORIES.includes(category as Category) ? (category as Category) : "all",
-    tag: url.searchParams.get("tag") ?? undefined,
-    favoritesOnly: url.searchParams.get("favorites") === "1",
-    sort: SORTS.includes(sort as SortKey) ? (sort as SortKey) : "recent",
-  };
-}
-
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const prompts = await listPrompts(filterFromQuery(url));
+  const prompts = await listPrompts(parseFilter((key) => url.searchParams.get(key)));
   // Counts come from the whole collection, not the filtered view, so the chips
   // do not vanish as you narrow the search.
   const all = await listPrompts();

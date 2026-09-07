@@ -218,3 +218,34 @@ export function tagCounts(prompts: Prompt[]): Array<{ tag: string; count: number
     .map(([tag, count]) => ({ tag, count }))
     .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
 }
+
+/**
+ * Reads a filter out of whatever holds the query string. Takes an accessor so
+ * the same rules serve a `URLSearchParams` in the API route and Next's resolved
+ * `searchParams` object on the page — the two cannot drift apart.
+ *
+ * Unknown values fall back rather than erroring: a mangled link shows the whole
+ * library instead of a stack trace.
+ */
+export function parseFilter(get: (key: string) => string | null | undefined): PromptFilter {
+  const category = get("category");
+  const sort = get("sort");
+  return {
+    q: get("q")?.trim() || undefined,
+    category: CATEGORIES.includes(category as Category) ? (category as Category) : "all",
+    tag: get("tag")?.trim() || undefined,
+    favoritesOnly: get("favorites") === "1",
+    sort: SORTS.includes(sort as SortKey) ? (sort as SortKey) : "recent",
+  };
+}
+
+/** Inverse of `parseFilter`. Defaults are omitted so a plain view has a clean URL. */
+export function filterToQuery(filter: PromptFilter): string {
+  const params = new URLSearchParams();
+  if (filter.q) params.set("q", filter.q);
+  if (filter.category && filter.category !== "all") params.set("category", filter.category);
+  if (filter.tag) params.set("tag", filter.tag);
+  if (filter.favoritesOnly) params.set("favorites", "1");
+  if (filter.sort && filter.sort !== "recent") params.set("sort", filter.sort);
+  return params.toString();
+}
