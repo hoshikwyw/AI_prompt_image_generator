@@ -29,9 +29,17 @@ export default async function PromptPage({ params }: PageProps<"/prompts/[id]">)
 
   return (
     <article>
-      <Link href="/" className="text-sm text-muted transition hover:text-foreground">
-        ← Library
-      </Link>
+      <div className="flex items-center justify-between gap-4">
+        <Link href="/" className="text-sm text-muted transition hover:text-foreground">
+          ← Library
+        </Link>
+        <Link
+          href={`/prompts/${prompt.id}/edit`}
+          className="rounded-xl border border-line px-3 py-1.5 text-sm transition hover:border-neutral-600"
+        >
+          Edit
+        </Link>
+      </div>
 
       <header className="mb-8 mt-4">
         <div className={`mb-5 h-1.5 w-24 rounded-full bg-linear-to-r ${prompt.accent}`} aria-hidden />

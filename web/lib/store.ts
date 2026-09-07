@@ -64,13 +64,20 @@ function mutate<T>(fn: (prompts: Prompt[]) => { prompts: Prompt[]; result: T }):
 
 const now = () => new Date().toISOString();
 
+/**
+ * Slugs held back from prompts. `/prompts/new` is the create form, so a prompt
+ * titled "New" would take a slug it can never be reached at; "edit" is reserved
+ * alongside it so the same trap cannot open up later.
+ */
+const RESERVED_IDS = new Set(["new", "edit"]);
+
 /** Appends `-2`, `-3`… until free. Called with the ids already in the file. */
 function uniqueId(title: string, taken: Set<string>): string {
   const base = slugify(title) || "prompt";
-  if (!taken.has(base)) return base;
+  if (!taken.has(base) && !RESERVED_IDS.has(base)) return base;
   for (let n = 2; ; n++) {
     const candidate = `${base}-${n}`;
-    if (!taken.has(candidate)) return candidate;
+    if (!taken.has(candidate) && !RESERVED_IDS.has(candidate)) return candidate;
   }
 }
 

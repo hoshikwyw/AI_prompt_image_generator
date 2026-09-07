@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import PromptCard from "./PromptCard";
 import {
@@ -166,9 +167,17 @@ export default function Library({ prompts: initial, initialFilter }: Props) {
           </p>
           <p className="mt-1 text-sm text-muted">
             {prompts.length === 0
-              ? "Add a prompt to get started."
+              ? "Add the first one to get started."
               : "Try a broader search, or clear the filters."}
           </p>
+          {prompts.length === 0 && (
+            <Link
+              href="/prompts/new"
+              className="mt-4 inline-block rounded-xl bg-foreground px-4 py-2 text-sm font-medium text-background transition hover:bg-white"
+            >
+              New prompt
+            </Link>
+          )}
         </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

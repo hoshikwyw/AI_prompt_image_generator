@@ -23,7 +23,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Link href="/" className="text-lg font-semibold tracking-tight">
               Promptbook
             </Link>
-            <span className="text-xs text-muted">Local collection</span>
+            <nav className="flex items-center gap-4">
+              <span className="hidden text-xs text-muted sm:inline">Local collection</span>
+              <Link
+                href="/prompts/new"
+                className="rounded-xl border border-line px-3 py-1.5 text-sm transition hover:border-neutral-600"
+              >
+                New prompt
+              </Link>
+            </nav>
           </div>
         </header>
 
