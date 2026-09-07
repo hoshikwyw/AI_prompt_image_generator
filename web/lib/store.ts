@@ -138,9 +138,3 @@ export async function recordCopy(id: string): Promise<Prompt | null> {
     return { prompts: copy, result: next };
   });
 }
-
-export async function toggleFavorite(id: string): Promise<Prompt | null> {
-  const current = await getPrompt(id);
-  if (!current) return null;
-  return updatePrompt(id, { favorite: !current.favorite });
-}
