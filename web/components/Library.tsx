@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import ImportExport from "./ImportExport";
 import PromptCard from "./PromptCard";
 import {
   CATEGORIES,
@@ -67,11 +68,14 @@ export default function Library({ prompts: initial, initialFilter }: Props) {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-semibold tracking-tight">Prompt library</h1>
-        <p className="mt-2 max-w-xl text-muted">
-          Collect prompts that work, tag them, and copy one when you need it.
-        </p>
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">Prompt library</h1>
+          <p className="mt-2 max-w-xl text-muted">
+            Collect prompts that work, tag them, and copy one when you need it.
+          </p>
+        </div>
+        <ImportExport onImported={setPrompts} />
       </div>
 
       <div className="mb-6 space-y-3">

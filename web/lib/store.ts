@@ -1,6 +1,13 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { filterPrompts, slugify, type Prompt, type PromptDraft, type PromptFilter } from "./prompt";
+import {
+  filterPrompts,
+  slugify,
+  validateDraft,
+  type Prompt,
+  type PromptDraft,
+  type PromptFilter,
+} from "./prompt";
 import { seedPrompts } from "./seed";
 
 /**
@@ -143,5 +150,81 @@ export async function recordCopy(id: string): Promise<Prompt | null> {
     const copy = [...prompts];
     copy[index] = next;
     return { prompts: copy, result: next };
+  });
+}
+
+export interface ImportSummary {
+  added: number;
+  updated: number;
+  skipped: Array<{ title: string; reason: string }>;
+}
+
+/** Refuses absurd payloads outright rather than rewriting the file with them. */
+export const MAX_IMPORT = 2000;
+
+const isIso = (v: unknown): v is string =>
+  typeof v === "string" && !Number.isNaN(Date.parse(v));
+
+/**
+ * Merge or replace the collection from exported JSON.
+ *
+ * An export is meant to round-trip, so `favorite`, `copies` and the timestamps
+ * survive when the incoming item carries valid ones. Everything else goes
+ * through the same validation a hand-written POST does — a bad row is skipped
+ * with a reason rather than failing the whole import, since the usual cause is
+ * one malformed entry in an otherwise good file.
+ */
+export async function importPrompts(
+  items: unknown[],
+  mode: "merge" | "replace" = "merge",
+): Promise<ImportSummary> {
+  return mutate((existing) => {
+    const summary: ImportSummary = { added: 0, updated: 0, skipped: [] };
+    const base = mode === "replace" ? [] : [...existing];
+    const byId = new Map(base.map((p, index) => [p.id, index]));
+
+    for (const item of items.slice(0, MAX_IMPORT)) {
+      const raw = (item ?? {}) as Record<string, unknown>;
+      const { ok, errors, draft } = validateDraft(raw);
+      if (!ok) {
+        summary.skipped.push({
+          title: String(raw.title ?? "(untitled)").slice(0, 80),
+          reason: Object.values(errors).join(" "),
+        });
+        continue;
+      }
+
+      const wanted = typeof raw.id === "string" ? slugify(raw.id) : "";
+      const stamp = now();
+      const favorite = typeof raw.favorite === "boolean" ? raw.favorite : false;
+      const copies =
+        typeof raw.copies === "number" && Number.isFinite(raw.copies) && raw.copies >= 0
+          ? Math.floor(raw.copies)
+          : 0;
+      const createdAt = isIso(raw.createdAt) ? raw.createdAt : stamp;
+      const updatedAt = isIso(raw.updatedAt) ? raw.updatedAt : stamp;
+
+      const at = wanted ? byId.get(wanted) : undefined;
+      if (at !== undefined) {
+        // Same id: an update, keeping the original creation date.
+        base[at] = {
+          ...base[at],
+          ...draft,
+          favorite,
+          copies,
+          createdAt: base[at].createdAt,
+          updatedAt,
+        };
+        summary.updated++;
+        continue;
+      }
+
+      const id = uniqueId(wanted || draft.title, new Set(byId.keys()));
+      base.push({ ...draft, id, favorite, copies, createdAt, updatedAt });
+      byId.set(id, base.length - 1);
+      summary.added++;
+    }
+
+    return { prompts: base, result: summary };
   });
 }

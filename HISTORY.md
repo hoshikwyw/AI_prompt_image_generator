@@ -112,3 +112,87 @@ Next.js 16.3.3 · React 19.2.8 · Tailwind 4 · TypeScript.
 
 Phase 2: Supabase (Postgres + auth allowlist), `/admin/prompts` CRUD with Test Run, per-user
 quota + global budget cap, BYOK settings, auto-expiry of results.
+
+---
+
+## Phase 2 — Prompt collection, generation parked · 2026-09-07
+
+**Goal:** no provider key was available, so the app became the thing that has to exist before
+generation is worth running — a library of the prompts themselves.
+
+### Context that shaped the design
+
+Phase 1 ended without a single successful generation, because it needed credentials nobody had.
+Rather than stall, the work moved to the half that needs no key: collecting, tagging and searching
+prompts. The six Phase 1 styles stopped being hard-coded configuration and became the first six
+rows of an editable collection.
+
+Generation was **parked, not deleted** — `lib/providers/`, `lib/image.ts`, `lib/jobs.ts`, the
+`/api/generate`, `/api/jobs` and `/api/image` routes and all of `probe/` are still in the tree,
+now unreachable from the UI.
+
+### Delivered — `web/`
+
+| Path | Purpose |
+|---|---|
+| `lib/prompt.ts` | The `Prompt` shape, `validateDraft`, and pure `filterPrompts` / `tagCounts` / `parseFilter` |
+| `lib/store.ts` | The collection in `.data/collection.json` — read, write, import |
+| `lib/seed.ts` | First-run contents, mapped from the Phase 1 styles |
+| `app/page.tsx` + `components/Library.tsx` | Search, category and tag filters, four sorts, favourites |
+| `components/PromptCard.tsx` · `PromptActions.tsx` | Card with body preview; optimistic copy + favourite |
+| `app/prompts/[id]/` | Detail page, edit page, danger zone |
+| `components/PromptForm.tsx` · `DeletePrompt.tsx` | One form for create and edit; two-step delete |
+| `components/ImportExport.tsx` | Export as a file, import by merge or replace |
+| `app/api/prompts/**` | List/create, get/patch/delete, copy counter, export, import |
+
+Removed from the UI: `app/create/[slug]`, `app/result/[id]`, `components/Studio.tsx`.
+
+### Decisions
+
+- **Filtering is one function, used twice.** `filterPrompts` runs on the client for instant search
+  and in the API route for programmatic use, so the two views of the collection cannot disagree.
+  The client holds the whole collection — it is a few kilobytes, and a search box that waits on a
+  round trip per keystroke feels broken.
+- **Filters live in the URL** via `replaceState`, so a filtered view is a shareable link without a
+  navigation per keystroke. The server parses the same query on first render.
+- **The id is the slug of the original title and never moves.** Renaming a prompt does not break a
+  link someone saved.
+- **`new` and `edit` are reserved slugs.** `/prompts/new` is the create form, so a prompt titled
+  "New" would have claimed a URL it could never be reached at.
+- **Validation is shared and total.** `validateDraft` coerces untrusted JSON and never throws;
+  PATCH validates the *merged result*, not the patch, so a one-field edit cannot leave a prompt
+  invalid. `id`, `createdAt` and `copies` stay store-owned even when a client posts them back.
+- **Favourite is set, not toggled**, so a retried request is idempotent.
+- **Copy counting is fire-and-forget.** The text is already on the clipboard; a lost count is not
+  worth interrupting anyone over.
+- **Import skips bad rows rather than failing the file** — one malformed entry should not cost you
+  the other ninety-nine — and an export round-trips: `favorite`, `copies` and `createdAt` survive.
+- **Writes are serialised** through one promise chain and land write-then-rename, so two concurrent
+  requests cannot interleave into a truncated file.
+
+### Verification
+
+`npm run build`, `tsc --noEmit` and eslint clean (bar nine pre-existing `no-explicit-any` errors in
+the dormant provider files). Exercised against a running production server:
+
+| Case | Result |
+|---|---|
+| Shared filter links (`?q=`, `?category=`, `?tag=`, `?favorites=1`) | render already filtered server-side |
+| Mangled `?category=junk` | falls back to the whole library |
+| Create / retitle / delete | 201 with slug id · id survives the rename · 204 then 404 |
+| Duplicate titles, prompt titled "New" | `my-test-prompt-2`, `new-2` |
+| 3 concurrent copy counts | all 3 land |
+| Invalid input, malformed JSON, unknown id, path traversal | 422 with field errors · 400 · 404 · 404 |
+| Export → re-import | 6 updated, 0 added, no duplicates; favourite and copies preserved |
+| Import with two bad rows | 1 added, 2 skipped with reasons |
+| Import over the 2000 cap | 413 |
+| `/create/*`, `/result/*` | 404 — no UI path reaches the providers |
+
+**Still not verified against real credentials** — no image has ever been generated. Nothing in this
+phase changes that.
+
+### Next
+
+Phase 3, when a key exists: run a collected prompt against a provider, and record the result
+against the prompt so "does this one actually work" has an answer. Then Supabase (Postgres + auth
+allowlist), per-user quota and a global budget cap.
