@@ -6,6 +6,7 @@ interface Props {
   prompt: Prompt;
   onChange?: (patch: Partial<Prompt>) => void;
   onTagClick?: (tag: string) => void;
+  canEdit?: boolean;
 }
 
 /**
@@ -13,7 +14,7 @@ interface Props {
  * their opening words far more than by their title — so it gets the mono type
  * and three clamped lines rather than a decorative image tile.
  */
-export default function PromptCard({ prompt, onChange, onTagClick }: Props) {
+export default function PromptCard({ prompt, onChange, onTagClick, canEdit }: Props) {
   return (
     <article className="flex flex-col overflow-hidden rounded-2xl border border-line bg-card transition hover:border-neutral-600">
       <div className={`h-1.5 w-full bg-linear-to-r ${prompt.accent}`} aria-hidden />
@@ -56,7 +57,7 @@ export default function PromptCard({ prompt, onChange, onTagClick }: Props) {
           <span className="truncate font-mono text-[11px] text-muted" title={prompt.targetModel}>
             {prompt.targetModel}
           </span>
-          <PromptActions prompt={prompt} onChange={onChange} />
+          <PromptActions prompt={prompt} onChange={onChange} canEdit={canEdit} />
         </div>
       </div>
     </article>

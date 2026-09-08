@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/admin";
 import { MAX_IMPORT, importPrompts } from "@/lib/store";
 
 export const runtime = "nodejs";
@@ -11,6 +12,9 @@ export const runtime = "nodejs";
  * one bad entry should not cost you the other ninety-nine.
  */
 export async function POST(request: Request) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   let body: unknown;
   try {
     body = await request.json();

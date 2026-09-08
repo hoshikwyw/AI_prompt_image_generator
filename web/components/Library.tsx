@@ -19,6 +19,8 @@ interface Props {
   prompts: Prompt[];
   /** Parsed from the query string on the server, so a shared link opens filtered. */
   initialFilter: PromptFilter;
+  /** False for a visitor: the write controls are not rendered at all. */
+  canEdit: boolean;
 }
 
 const SORT_LABELS: Record<SortKey, string> = {
@@ -34,7 +36,7 @@ const SORT_LABELS: Record<SortKey, string> = {
  * per keystroke feels broken. `filterPrompts` is the same function the API
  * uses, so the two views of the collection cannot disagree.
  */
-export default function Library({ prompts: initial, initialFilter }: Props) {
+export default function Library({ prompts: initial, initialFilter, canEdit }: Props) {
   const [prompts, setPrompts] = useState(initial);
   const [filter, setFilter] = useState<PromptFilter>(initialFilter);
 
@@ -75,7 +77,7 @@ export default function Library({ prompts: initial, initialFilter }: Props) {
             Collect prompts that work, tag them, and copy one when you need it.
           </p>
         </div>
-        <ImportExport onImported={setPrompts} />
+        <ImportExport onImported={setPrompts} canImport={canEdit} />
       </div>
 
       <div className="mb-6 space-y-3">
@@ -174,7 +176,7 @@ export default function Library({ prompts: initial, initialFilter }: Props) {
               ? "Add the first one to get started."
               : "Try a broader search, or clear the filters."}
           </p>
-          {prompts.length === 0 && (
+          {prompts.length === 0 && canEdit && (
             <Link
               href="/prompts/new"
               className="mt-4 inline-block rounded-xl bg-foreground px-4 py-2 text-sm font-medium text-background transition hover:bg-white"
@@ -191,6 +193,7 @@ export default function Library({ prompts: initial, initialFilter }: Props) {
               prompt={prompt}
               onChange={(patch) => patchPrompt(prompt.id, patch)}
               onTagClick={(tag) => set({ tag: filter.tag === tag ? undefined : tag })}
+              canEdit={canEdit}
             />
           ))}
         </div>

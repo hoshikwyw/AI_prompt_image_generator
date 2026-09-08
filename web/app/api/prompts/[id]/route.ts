@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/admin";
 import { validateDraft, type PromptDraft } from "@/lib/prompt";
 import { deletePrompt, getPrompt, updatePrompt } from "@/lib/store";
 
@@ -21,6 +22,9 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/prompts/[id
  * lands on the same state instead of flipping it back.
  */
 export async function PATCH(request: Request, ctx: RouteContext<"/api/prompts/[id]">) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   const { id } = await ctx.params;
   const current = await getPrompt(id);
   if (!current) return notFound();
@@ -59,6 +63,9 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/prompts/[i
 }
 
 export async function DELETE(_request: Request, ctx: RouteContext<"/api/prompts/[id]">) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   const { id } = await ctx.params;
   return (await deletePrompt(id)) ? new Response(null, { status: 204 }) : notFound();
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { isAdmin } from "@/lib/admin";
 import { activeBackend } from "@/lib/store";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -12,7 +13,9 @@ export const metadata: Metadata = {
   description: "Collect, tag and search the AI prompts that actually work.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const admin = await isAdmin();
+
   return (
     <html
       lang="en"
@@ -25,13 +28,21 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               Promptbook
             </Link>
             <nav className="flex items-center gap-4">
-              <span className="hidden text-xs text-muted sm:inline">Local collection</span>
-              <Link
-                href="/prompts/new"
-                className="rounded-xl border border-line px-3 py-1.5 text-sm transition hover:border-neutral-600"
-              >
-                New prompt
-              </Link>
+              {admin ? (
+                <Link
+                  href="/prompts/new"
+                  className="rounded-xl border border-line px-3 py-1.5 text-sm transition hover:border-neutral-600"
+                >
+                  New prompt
+                </Link>
+              ) : (
+                <Link
+                  href="/admin"
+                  className="text-xs text-muted transition hover:text-foreground"
+                >
+                  Admin
+                </Link>
+              )}
             </nav>
           </div>
         </header>

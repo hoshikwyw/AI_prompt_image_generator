@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/admin";
 import { parseFilter, tagCounts, validateDraft } from "@/lib/prompt";
 import { createPrompt, listPrompts } from "@/lib/store";
 
@@ -17,6 +18,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   let body: unknown;
   try {
     body = await request.json();

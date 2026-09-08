@@ -9,6 +9,8 @@ interface Props {
   onChange?: (patch: Partial<Prompt>) => void;
   /** The detail page has room for the count; a card does not. */
   showCopies?: boolean;
+  /** Favouriting writes to the shared collection, so it is gated. Copying is not. */
+  canEdit?: boolean;
 }
 
 type CopyState = "idle" | "copied" | "failed";
@@ -20,7 +22,12 @@ type CopyState = "idle" | "copied" | "failed";
  * request. `onChange` exists only so a parent list can re-filter (unfavouriting
  * inside the favourites view should drop the card).
  */
-export default function PromptActions({ prompt, onChange, showCopies = false }: Props) {
+export default function PromptActions({
+  prompt,
+  onChange,
+  showCopies = false,
+  canEdit = false,
+}: Props) {
   const [favorite, setFavorite] = useState(prompt.favorite);
   const [copies, setCopies] = useState(prompt.copies);
   const [copyState, setCopyState] = useState<CopyState>("idle");
@@ -85,20 +92,22 @@ export default function PromptActions({ prompt, onChange, showCopies = false }: 
         {copyLabel}
       </button>
 
-      <button
-        type="button"
-        onClick={toggleFavorite}
-        aria-pressed={favorite}
-        aria-label={favorite ? "Remove from favourites" : "Add to favourites"}
-        title={favorite ? "Remove from favourites" : "Add to favourites"}
-        className={`rounded-lg border px-2 py-1.5 text-xs leading-none transition ${
-          favorite
-            ? "border-amber-700 bg-amber-950/40 text-amber-300"
-            : "border-line bg-background text-muted hover:border-neutral-600 hover:text-foreground"
-        }`}
-      >
-        {favorite ? "★" : "☆"}
-      </button>
+      {canEdit && (
+        <button
+          type="button"
+          onClick={toggleFavorite}
+          aria-pressed={favorite}
+          aria-label={favorite ? "Remove from favourites" : "Add to favourites"}
+          title={favorite ? "Remove from favourites" : "Add to favourites"}
+          className={`rounded-lg border px-2 py-1.5 text-xs leading-none transition ${
+            favorite
+              ? "border-amber-700 bg-amber-950/40 text-amber-300"
+              : "border-line bg-background text-muted hover:border-neutral-600 hover:text-foreground"
+          }`}
+        >
+          {favorite ? "★" : "☆"}
+        </button>
+      )}
 
       {showCopies && (
         <span className="text-xs text-muted">

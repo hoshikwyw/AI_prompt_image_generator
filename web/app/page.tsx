@@ -1,4 +1,5 @@
 import Library from "@/components/Library";
+import { isAdmin } from "@/lib/admin";
 import { parseFilter } from "@/lib/prompt";
 import { listPrompts } from "@/lib/store";
 
@@ -13,5 +14,5 @@ export default async function LibraryPage({ searchParams }: PageProps<"/">) {
   // filter is only the starting view, so clearing a chip does not need a fetch.
   const prompts = await listPrompts();
 
-  return <Library prompts={prompts} initialFilter={parseFilter(get)} />;
+  return <Library prompts={prompts} initialFilter={parseFilter(get)} canEdit={await isAdmin()} />;
 }

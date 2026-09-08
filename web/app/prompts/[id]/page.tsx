@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import PromptActions from "@/components/PromptActions";
+import { isAdmin } from "@/lib/admin";
 import { getPrompt } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +19,7 @@ export default async function PromptPage({ params }: PageProps<"/prompts/[id]">)
   const { id } = await params;
   const prompt = await getPrompt(id);
   if (!prompt) notFound();
+  const canEdit = await isAdmin();
 
   const meta: Array<[string, string]> = [
     ["Category", prompt.category],
@@ -33,12 +35,14 @@ export default async function PromptPage({ params }: PageProps<"/prompts/[id]">)
         <Link href="/" className="text-sm text-muted transition hover:text-foreground">
           ← Library
         </Link>
-        <Link
-          href={`/prompts/${prompt.id}/edit`}
-          className="rounded-xl border border-line px-3 py-1.5 text-sm transition hover:border-neutral-600"
-        >
-          Edit
-        </Link>
+        {canEdit && (
+          <Link
+            href={`/prompts/${prompt.id}/edit`}
+            className="rounded-xl border border-line px-3 py-1.5 text-sm transition hover:border-neutral-600"
+          >
+            Edit
+          </Link>
+        )}
       </div>
 
       <header className="mb-8 mt-4">
@@ -64,7 +68,7 @@ export default async function PromptPage({ params }: PageProps<"/prompts/[id]">)
       <section className="rounded-2xl border border-line bg-card">
         <div className="flex items-center justify-between gap-4 border-b border-line px-5 py-3">
           <h2 className="text-sm font-medium">Prompt</h2>
-          <PromptActions prompt={prompt} showCopies />
+          <PromptActions prompt={prompt} canEdit={canEdit} showCopies />
         </div>
         {/* Pre-wrap, not a textarea: the exact whitespace is part of the prompt. */}
         <p className="whitespace-pre-wrap px-5 py-4 font-mono text-sm leading-relaxed">

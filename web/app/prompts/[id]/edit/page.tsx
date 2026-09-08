@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import DeletePrompt from "@/components/DeletePrompt";
 import PromptForm from "@/components/PromptForm";
+import { isAdmin } from "@/lib/admin";
 import { getPrompt } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +15,8 @@ export async function generateMetadata({ params }: PageProps<"/prompts/[id]/edit
 
 export default async function EditPromptPage({ params }: PageProps<"/prompts/[id]/edit">) {
   const { id } = await params;
+  if (!(await isAdmin())) redirect(`/admin?next=/prompts/${encodeURIComponent(id)}/edit`);
+
   const prompt = await getPrompt(id);
   if (!prompt) notFound();
 

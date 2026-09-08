@@ -18,7 +18,14 @@ interface Summary {
  * needs multipart handling for what is a small text file. Replace is two-step
  * for the same reason delete is: it discards the whole collection.
  */
-export default function ImportExport({ onImported }: { onImported: (prompts: Prompt[]) => void }) {
+export default function ImportExport({
+  onImported,
+  canImport,
+}: {
+  onImported: (prompts: Prompt[]) => void;
+  /** Export is just a read of public data; import rewrites the collection. */
+  canImport: boolean;
+}) {
   const router = useRouter();
   const fileInput = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState<"merge" | "replace">("merge");
@@ -81,39 +88,43 @@ export default function ImportExport({ onImported }: { onImported: (prompts: Pro
           Export
         </a>
 
-        <button
-          type="button"
-          onClick={pickFile}
-          disabled={busy}
-          className={`rounded-xl border px-3 py-1.5 transition disabled:opacity-50 ${
-            armed
-              ? "border-red-700 bg-red-950/50 text-red-300"
-              : "border-line text-muted hover:border-neutral-600 hover:text-foreground"
-          }`}
-        >
-          {busy ? "Importing…" : armed ? "Click again to replace all" : "Import"}
-        </button>
+        {canImport && (
+          <>
+            <button
+              type="button"
+              onClick={pickFile}
+              disabled={busy}
+              className={`rounded-xl border px-3 py-1.5 transition disabled:opacity-50 ${
+                armed
+                  ? "border-red-700 bg-red-950/50 text-red-300"
+                  : "border-line text-muted hover:border-neutral-600 hover:text-foreground"
+              }`}
+            >
+              {busy ? "Importing…" : armed ? "Click again to replace all" : "Import"}
+            </button>
 
-        <select
-          value={mode}
-          onChange={(e) => {
-            setMode(e.target.value as "merge" | "replace");
-            setArmed(false);
-          }}
-          aria-label="Import mode"
-          className="rounded-xl border border-line bg-card px-2 py-1.5 text-xs text-muted outline-none transition focus:border-neutral-500"
-        >
-          <option value="merge">Merge</option>
-          <option value="replace">Replace all</option>
-        </select>
+            <select
+              value={mode}
+              onChange={(e) => {
+                setMode(e.target.value as "merge" | "replace");
+                setArmed(false);
+              }}
+              aria-label="Import mode"
+              className="rounded-xl border border-line bg-card px-2 py-1.5 text-xs text-muted outline-none transition focus:border-neutral-500"
+            >
+              <option value="merge">Merge</option>
+              <option value="replace">Replace all</option>
+            </select>
 
-        <input
-          ref={fileInput}
-          type="file"
-          accept="application/json,.json"
-          onChange={onFile}
-          className="hidden"
-        />
+            <input
+              ref={fileInput}
+              type="file"
+              accept="application/json,.json"
+              onChange={onFile}
+              className="hidden"
+            />
+          </>
+        )}
       </div>
 
       {summary && (
