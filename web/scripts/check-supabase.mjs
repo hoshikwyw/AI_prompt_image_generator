@@ -25,8 +25,8 @@ for (const file of [".env.local", ".env"]) {
   }
 }
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+const url = process.env.SUPABASE_URL ?? "";
+const anonKey = process.env.SUPABASE_ANON_KEY ?? "";
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 const bucket = process.env.SUPABASE_BUCKET || "prompt-samples";
 
@@ -40,7 +40,7 @@ const fail = (msg) => {
 console.log("\nSupabase setup check\n");
 
 if (!url || !anonKey) {
-  fail("NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are required.");
+  fail("SUPABASE_URL and SUPABASE_ANON_KEY are required.");
   console.log("\n  Copy web/.env.example to web/.env.local and fill it in.\n");
   process.exit(1);
 }

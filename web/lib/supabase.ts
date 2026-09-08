@@ -16,8 +16,11 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
  *   Only server routes behind the admin gate may call it.
  */
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+// Deliberately not NEXT_PUBLIC_*: nothing in the browser talks to Supabase, and
+// a NEXT_PUBLIC value is inlined at build time, which would bake the choice of
+// backend into the bundle instead of reading it when the server starts.
+const url = process.env.SUPABASE_URL ?? "";
+const anonKey = process.env.SUPABASE_ANON_KEY ?? "";
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 
 /** Where sample images live. Created by the initial migration. */
@@ -42,7 +45,7 @@ let writeClient: SupabaseClient | null = null;
 export function supabaseRead(): SupabaseClient {
   if (!supabaseConfigured()) {
     throw new Error(
-      "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.",
+      "Supabase is not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY.",
     );
   }
   readClient ??= createClient(url, anonKey, options);

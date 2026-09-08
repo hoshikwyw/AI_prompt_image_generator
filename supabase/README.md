@@ -25,8 +25,8 @@ npx supabase db push
 Copy the API values from **Project Settings → API** into `web/.env.local`:
 
 ```
-NEXT_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon public key>
+SUPABASE_URL=https://<ref>.supabase.co
+SUPABASE_ANON_KEY=<anon public key>
 SUPABASE_SERVICE_ROLE_KEY=<service_role key>
 ```
 
@@ -38,6 +38,10 @@ cd web && npm run supabase:check
 
 It reads both tables with the anon key, proves an anonymous INSERT is *rejected*, and confirms the
 bucket and the copy-counter function exist. It never prints a key.
+
+Both are read by the server at startup. There is no `NEXT_PUBLIC_` prefix on purpose: nothing in
+the browser talks to Supabase, and a `NEXT_PUBLIC_` value is inlined at build time, which would
+bake the choice of backend into the bundle.
 
 ## How access works
 

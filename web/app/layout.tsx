@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { activeBackend } from "@/lib/store";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -39,8 +40,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
 
         <footer className="border-t border-line">
           <div className="mx-auto max-w-6xl px-6 py-5 text-xs text-muted">
-            Prompts are stored in <code className="font-mono">.data/collection.json</code> on this
-            machine. Image generation is parked until an API key is available.
+            {activeBackend() === "supabase" ? (
+              <>Prompts are stored in Supabase.</>
+            ) : (
+              <>
+                Prompts are stored in <code className="font-mono">.data/collection.json</code> on
+                this machine — set the Supabase keys to share them.
+              </>
+            )}{" "}
+            Image generation is parked until an API key is available.
           </div>
         </footer>
       </body>
