@@ -6,13 +6,16 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "supabase:check": "node scripts/check-supabase.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.19.0",
+    "@supabase/supabase-js": "^2.116.0",
     "next": "16.3.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "server-only": "^0.0.1",
     "sharp": "^0.35.4"
   },
   "devDependencies": {
