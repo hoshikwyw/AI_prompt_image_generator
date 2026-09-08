@@ -12,6 +12,7 @@ import {
   tagCounts,
   type Prompt,
   type PromptFilter,
+  type PromptImage,
   type SortKey,
 } from "@/lib/prompt";
 
@@ -21,6 +22,8 @@ interface Props {
   initialFilter: PromptFilter;
   /** False for a visitor: the write controls are not rendered at all. */
   canEdit: boolean;
+  /** Prompt id -> its first sample image, for the card tiles. */
+  covers: Record<string, PromptImage>;
 }
 
 const SORT_LABELS: Record<SortKey, string> = {
@@ -36,7 +39,7 @@ const SORT_LABELS: Record<SortKey, string> = {
  * per keystroke feels broken. `filterPrompts` is the same function the API
  * uses, so the two views of the collection cannot disagree.
  */
-export default function Library({ prompts: initial, initialFilter, canEdit }: Props) {
+export default function Library({ prompts: initial, initialFilter, canEdit, covers }: Props) {
   const [prompts, setPrompts] = useState(initial);
   const [filter, setFilter] = useState<PromptFilter>(initialFilter);
 
@@ -194,6 +197,7 @@ export default function Library({ prompts: initial, initialFilter, canEdit }: Pr
               onChange={(patch) => patchPrompt(prompt.id, patch)}
               onTagClick={(tag) => set({ tag: filter.tag === tag ? undefined : tag })}
               canEdit={canEdit}
+              image={covers[prompt.id]}
             />
           ))}
         </div>

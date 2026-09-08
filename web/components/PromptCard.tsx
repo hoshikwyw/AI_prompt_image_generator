@@ -1,12 +1,14 @@
 import Link from "next/link";
 import PromptActions from "./PromptActions";
-import type { Prompt } from "@/lib/prompt";
+import type { Prompt, PromptImage } from "@/lib/prompt";
 
 interface Props {
   prompt: Prompt;
   onChange?: (patch: Partial<Prompt>) => void;
   onTagClick?: (tag: string) => void;
   canEdit?: boolean;
+  /** First sample for this prompt, when it has one. */
+  image?: PromptImage;
 }
 
 /**
@@ -14,10 +16,24 @@ interface Props {
  * their opening words far more than by their title — so it gets the mono type
  * and three clamped lines rather than a decorative image tile.
  */
-export default function PromptCard({ prompt, onChange, onTagClick, canEdit }: Props) {
+export default function PromptCard({ prompt, onChange, onTagClick, canEdit, image }: Props) {
   return (
     <article className="flex flex-col overflow-hidden rounded-2xl border border-line bg-card transition hover:border-neutral-600">
-      <div className={`h-1.5 w-full bg-linear-to-r ${prompt.accent}`} aria-hidden />
+      {image ? (
+        <Link href={`/prompts/${prompt.id}`} className="block">
+          {/* Plain img: user uploads, on an origin the image optimiser is not
+              configured for. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={image.url}
+            alt={image.caption || `Sample output for ${prompt.title}`}
+            loading="lazy"
+            className="aspect-4/3 w-full object-cover"
+          />
+        </Link>
+      ) : (
+        <div className={`h-1.5 w-full bg-linear-to-r ${prompt.accent}`} aria-hidden />
+      )}
 
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div>

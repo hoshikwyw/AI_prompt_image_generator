@@ -59,6 +59,36 @@ export interface Prompt {
   updatedAt: string;
 }
 
+/**
+ * A sample image shown with a prompt — what the prompt actually produced.
+ *
+ * `url` is derived by the backend rather than stored: Supabase serves these
+ * from a public bucket, the local backend from an API route, and neither URL
+ * should be baked into a row that outlives the storage arrangement.
+ */
+export interface PromptImage {
+  id: string;
+  promptId: string;
+  url: string;
+  caption: string;
+  width: number | null;
+  height: number | null;
+  bytes: number | null;
+  mime: string | null;
+  position: number;
+  createdAt: string;
+}
+
+export const MAX_CAPTION = 200;
+
+/**
+ * Upload limits. They live here, not next to the sharp code that enforces
+ * them, so the browser can check a file before sending it without dragging a
+ * native image library into the client bundle.
+ */
+export const MAX_SAMPLE_BYTES = 12 * 1024 * 1024;
+export const ACCEPTED_SAMPLE_MIME = ["image/jpeg", "image/png", "image/webp", "image/avif"];
+
 /** The fields a caller may set. Everything else is owned by the store. */
 export interface PromptDraft {
   title: string;

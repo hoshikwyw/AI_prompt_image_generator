@@ -1,10 +1,12 @@
-import { supabaseRead, supabaseWrite } from "../supabase";
+import { randomUUID } from "node:crypto";
+import { SUPABASE_BUCKET, publicImageUrl, supabaseRead, supabaseWrite } from "../supabase";
 import {
   filterPrompts,
   type Category,
   type Prompt,
   type PromptDraft,
   type PromptFilter,
+  type PromptImage,
 } from "../prompt";
 import {
   MAX_IMPORT,
@@ -12,6 +14,7 @@ import {
   readImportItem,
   uniqueId,
   type ImportSummary,
+  type NewImage,
   type StoreBackend,
 } from "./shared";
 
@@ -28,6 +31,9 @@ import {
  */
 
 const TABLE = "prompts";
+const IMAGE_TABLE = "prompt_images";
+const IMAGE_COLUMNS =
+  "id, prompt_id, storage_path, caption, width, height, bytes, mime, position, created_at";
 
 /** Every column, in one place, so a select cannot quietly miss a field. */
 const COLUMNS =
@@ -84,6 +90,34 @@ const toRow = (prompt: Prompt): Row => ({
   copies: prompt.copies,
   created_at: prompt.createdAt,
   updated_at: prompt.updatedAt,
+});
+
+interface ImageRow {
+  id: string;
+  prompt_id: string;
+  storage_path: string;
+  caption: string;
+  width: number | null;
+  height: number | null;
+  bytes: number | null;
+  mime: string | null;
+  position: number;
+  created_at: string;
+}
+
+const toPromptImage = (row: ImageRow): PromptImage => ({
+  id: row.id,
+  promptId: row.prompt_id,
+  // Derived, not stored: the row keeps the object key so moving buckets or
+  // domains does not mean rewriting every image.
+  url: publicImageUrl(row.storage_path),
+  caption: row.caption,
+  width: row.width,
+  height: row.height,
+  bytes: row.bytes,
+  mime: row.mime,
+  position: row.position,
+  createdAt: new Date(row.created_at).toISOString(),
 });
 
 /** Only the draft fields, for a partial update. */
@@ -193,11 +227,30 @@ export const supabaseStore: StoreBackend = {
   },
 
   async deletePrompt(id: string): Promise<boolean> {
-    // Image rows cascade with the prompt; the stored objects are cleaned up by
-    // the caller that owns them.
-    const { data, error } = await supabaseWrite().from(TABLE).delete().eq("id", id).select("id");
+    const db = supabaseWrite();
+
+    // The rows cascade, but the objects in storage do not, so their paths have
+    // to be collected before the cascade removes the only record of them.
+    const { data: images, error: imageError } = await db
+      .from(IMAGE_TABLE)
+      .select("storage_path")
+      .eq("prompt_id", id);
+    if (imageError) fail("delete (reading images)", imageError);
+
+    const { data, error } = await db.from(TABLE).delete().eq("id", id).select("id");
     if (error) fail("delete", error);
-    return (data ?? []).length > 0;
+    if ((data ?? []).length === 0) return false;
+
+    const paths = (images ?? []).map((i) => i.storage_path as string);
+    if (paths.length > 0) {
+      // A failure here leaks bytes but has already removed the prompt, so it is
+      // reported rather than thrown — the row is gone either way.
+      const { error: storageError } = await db.storage.from(SUPABASE_BUCKET).remove(paths);
+      if (storageError) {
+        console.error(`Orphaned ${paths.length} object(s) in storage: ${storageError.message}`);
+      }
+    }
+    return true;
   },
 
   async recordCopy(id: string): Promise<Prompt | null> {
@@ -269,5 +322,86 @@ export const supabaseStore: StoreBackend = {
     }
 
     return summary;
+  },
+
+  async listImages(promptIds: string[]): Promise<Map<string, PromptImage[]>> {
+    const out = new Map<string, PromptImage[]>();
+    if (promptIds.length === 0) return out;
+
+    const { data, error } = await supabaseRead()
+      .from(IMAGE_TABLE)
+      .select(IMAGE_COLUMNS)
+      .in("prompt_id", promptIds)
+      .order("position", { ascending: true })
+      .order("created_at", { ascending: true });
+    if (error) fail("list images", error);
+
+    for (const row of (data ?? []) as unknown as ImageRow[]) {
+      const list = out.get(row.prompt_id) ?? [];
+      list.push(toPromptImage(row));
+      out.set(row.prompt_id, list);
+    }
+    return out;
+  },
+
+  async addImage(promptId: string, input: NewImage): Promise<PromptImage | null> {
+    const db = supabaseWrite();
+    if (!(await this.getPrompt(promptId))) return null;
+
+    const { count, error: countError } = await db
+      .from(IMAGE_TABLE)
+      .select("id", { count: "exact", head: true })
+      .eq("prompt_id", promptId);
+    if (countError) fail("image count", countError);
+
+    const position = count ?? 0;
+    // Prefixed by prompt so the bucket stays browsable, suffixed by a random
+    // id so re-uploading the same picture never overwrites the old object.
+    const storagePath = `${promptId}/${randomUUID()}.${input.extension}`;
+
+    const { error: uploadError } = await db.storage
+      .from(SUPABASE_BUCKET)
+      .upload(storagePath, input.bytes, { contentType: input.mime, upsert: false });
+    if (uploadError) fail("image upload", uploadError);
+
+    const { data, error } = await db
+      .from(IMAGE_TABLE)
+      .insert({
+        prompt_id: promptId,
+        storage_path: storagePath,
+        caption: input.caption,
+        width: input.width,
+        height: input.height,
+        bytes: input.bytes.byteLength,
+        mime: input.mime,
+        position,
+      })
+      .select(IMAGE_COLUMNS)
+      .single();
+
+    if (error) {
+      // The row is what makes an object reachable, so an orphan is worse than
+      // a failed upload: clean it up before reporting.
+      await db.storage.from(SUPABASE_BUCKET).remove([storagePath]);
+      fail("image insert", error);
+    }
+    return toPromptImage(data as unknown as ImageRow);
+  },
+
+  async deleteImage(imageId: string): Promise<boolean> {
+    const db = supabaseWrite();
+    const { data, error } = await db
+      .from(IMAGE_TABLE)
+      .delete()
+      .eq("id", imageId)
+      .select("storage_path");
+    if (error) fail("image delete", error);
+
+    const path = (data ?? [])[0]?.storage_path as string | undefined;
+    if (!path) return false;
+
+    const { error: storageError } = await db.storage.from(SUPABASE_BUCKET).remove([path]);
+    if (storageError) console.error(`Orphaned ${path} in storage: ${storageError.message}`);
+    return true;
   },
 };

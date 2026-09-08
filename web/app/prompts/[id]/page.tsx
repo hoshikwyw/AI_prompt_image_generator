@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import PromptActions from "@/components/PromptActions";
+import SampleImages from "@/components/SampleImages";
 import { isAdmin } from "@/lib/admin";
-import { getPrompt } from "@/lib/store";
+import { getPrompt, listImages } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ export default async function PromptPage({ params }: PageProps<"/prompts/[id]">)
   const prompt = await getPrompt(id);
   if (!prompt) notFound();
   const canEdit = await isAdmin();
+  const images = (await listImages([prompt.id])).get(prompt.id) ?? [];
 
   const meta: Array<[string, string]> = [
     ["Category", prompt.category],
@@ -75,6 +77,8 @@ export default async function PromptPage({ params }: PageProps<"/prompts/[id]">)
           {prompt.body}
         </p>
       </section>
+
+      <SampleImages promptId={prompt.id} images={images} canEdit={canEdit} />
 
       {prompt.notes && (
         <section className="mt-6">

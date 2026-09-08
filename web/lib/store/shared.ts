@@ -1,4 +1,11 @@
-import { slugify, validateDraft, type Prompt, type PromptDraft, type PromptFilter } from "../prompt";
+import {
+  slugify,
+  validateDraft,
+  type Prompt,
+  type PromptDraft,
+  type PromptFilter,
+  type PromptImage,
+} from "../prompt";
 
 /**
  * Everything both backends must agree on.
@@ -103,4 +110,28 @@ export interface StoreBackend {
   deletePrompt(id: string): Promise<boolean>;
   recordCopy(id: string): Promise<Prompt | null>;
   importPrompts(items: unknown[], mode: "merge" | "replace"): Promise<ImportSummary>;
+
+  /**
+   * Images for the given prompts, keyed by prompt id. Takes a list rather than
+   * one id so the library grid costs one query instead of one per card.
+   */
+  listImages(promptIds: string[]): Promise<Map<string, PromptImage[]>>;
+  addImage(promptId: string, input: NewImage): Promise<PromptImage | null>;
+  deleteImage(imageId: string): Promise<boolean>;
+
+  /**
+   * Only the local backend serves its own bytes — Supabase images are fetched
+   * straight from the public bucket, so it has no reason to implement this.
+   */
+  readImageBytes?(imageId: string): Promise<{ bytes: Buffer; mime: string } | null>;
+}
+
+/** An already-validated, already-re-encoded image on its way into storage. */
+export interface NewImage {
+  bytes: Buffer;
+  mime: string;
+  extension: string;
+  width: number;
+  height: number;
+  caption: string;
 }
