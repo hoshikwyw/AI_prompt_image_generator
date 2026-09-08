@@ -196,3 +196,76 @@ phase changes that.
 Phase 3, when a key exists: run a collected prompt against a provider, and record the result
 against the prompt so "does this one actually work" has an answer. Then Supabase (Postgres + auth
 allowlist), per-user quota and a global budget cap.
+
+---
+
+## Phase 3 — Supabase backend, admin gate, sample images · 2026-09-08
+
+**Goal:** move the collection off one laptop, so prompts and the images they produced can be shown
+to other people, without letting those people edit it.
+
+### Delivered
+
+| Path | Purpose |
+|---|---|
+| `supabase/migrations/` | `prompts`, `prompt_images`, RLS, atomic copy counter, public storage bucket |
+| `web/lib/supabase.ts` | Read (anon) and write (service_role) clients; server-only |
+| `web/lib/store/shared.ts` | The rules both backends must agree on, plus the `StoreBackend` contract |
+| `web/lib/store/disk.ts` · `supabase.ts` | The two implementations |
+| `web/lib/admin.ts` | Write policy, session signing, login throttling |
+| `web/app/admin/` · `api/admin/session/` | Sign in and out |
+| `web/lib/sample-image.ts` · `components/SampleImages.tsx` | Upload pipeline and gallery |
+| `web/scripts/check-supabase.mjs` · `migrate-to-supabase.mjs` | Setup check and local → remote migration |
+
+### Decisions
+
+- **Two backends, one contract.** Supabase when configured, the local JSON file otherwise, decided
+  once at startup. Id allocation and import semantics are shared, so the two cannot drift. It also
+  keeps the app runnable — and testable — with no credentials at all.
+- **No `NEXT_PUBLIC_` prefix.** Those are inlined at build time, which would bake the choice of
+  backend into the bundle. Nothing client-side talks to Supabase, so the URL and anon key are plain
+  server variables read at startup.
+- **RLS allows `select` and nothing else.** There are no write policies at all; writes go through
+  the `service_role` key, which bypasses RLS. That key is the entire security boundary, so it is
+  server-only and the routes using it sit behind the gate.
+- **The write policy depends on what a write would reach.** No passphrase plus the local file means
+  editing stays open — it is your own machine. No passphrase plus Supabase means editing is refused
+  outright, because shared data must never be editable by whoever finds the URL.
+- **Sessions are HMAC tokens keyed by the passphrase**, so changing it invalidates every session.
+  Comparison is timing-safe and logins are throttled to 10 per 15 minutes.
+- **Favourite is admin-only**; it writes to the shared collection. Copy counting stays public,
+  since every visitor needs it and it can only increment.
+- **Uploads are re-encoded, never stored as sent.** sharp converts to WebP at 1600px, which strips
+  EXIF and rejects anything that is not really an image.
+- **Storage paths are rows, URLs are derived.** Moving buckets or domains does not mean rewriting
+  every image row.
+- **An object with no row is unreachable garbage**, so a failed insert removes the object it just
+  uploaded, and deleting a prompt collects its storage paths *before* the cascade removes them.
+
+### Verification
+
+Build, TypeScript and eslint clean (bar nine pre-existing `no-explicit-any` errors in the dormant
+provider files). Against running production servers:
+
+| Case | Result |
+|---|---|
+| Backend selection from env, same build | footer and behaviour switch; a broken project 500s loudly rather than silently falling back to disk |
+| Disk backend after the refactor | seed, filters, create, patch, 3 concurrent copies, reserved slugs, import/export — all unchanged |
+| Write policy `open` / `gated` / `locked` | writes 2xx / 401 / 403; reads 200 in every case |
+| Forged and expired session cookies | 401 |
+| 11th bad login | 429, and a correct passphrase is still refused while throttled |
+| Upload 2400×1600 JPEG | stored as WebP 1600×1067, EXIF gone |
+| Text file sent as `image/jpeg` | 415 |
+| Delete image · delete prompt | bytes gone; prompt delete left zero files behind |
+| Setup check with no credentials | exits 1 with what to fill in |
+
+**Not verified against a live Supabase project.** No credentials were available while this was
+built, so every query in `lib/store/supabase.ts`, the storage upload path and the migration script
+have never run against Postgres. `npm run supabase:check` is the gate that proves the schema, and
+the endpoint suite should be re-run against the live project before trusting it.
+
+### Next
+
+Phase 4: run `npm run supabase:check` against the real project and re-verify the Supabase paths.
+Then wire `/api/generate` to collected prompts rather than the old seed file, so a key turning up
+makes the collection runnable.

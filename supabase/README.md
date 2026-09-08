@@ -39,6 +39,18 @@ cd web && npm run supabase:check
 It reads both tables with the anon key, proves an anonymous INSERT is *rejected*, and confirms the
 bucket and the copy-counter function exist. It never prints a key.
 
+If you already have a local collection, carry it across:
+
+```bash
+npm run supabase:migrate -- --dry-run   # says what it would do
+npm run supabase:migrate                # upserts prompts, uploads missing images
+npm run supabase:migrate -- --replace   # wipes the remote collection first
+```
+
+Re-running is safe: prompts upsert by id and keep their original `created_at`, and images are only
+uploaded for prompts that have none yet — an uploaded image has no natural key to deduplicate on,
+so a second run would otherwise pile up copies.
+
 Both are read by the server at startup. There is no `NEXT_PUBLIC_` prefix on purpose: nothing in
 the browser talks to Supabase, and a `NEXT_PUBLIC_` value is inlined at build time, which would
 bake the choice of backend into the bundle.
