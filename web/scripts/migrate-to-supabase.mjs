@@ -26,7 +26,9 @@ const root = new URL("..", import.meta.url);
 
 for (const file of [".env.local", ".env"]) {
   try {
-    for (const line of readFileSync(new URL(file, root), "utf8").split("\n")) {
+    // Split on \r?\n: a file edited on Windows can carry CRLF, and a trailing
+    // \r left on the line would otherwise beat the value regex below.
+    for (const line of readFileSync(new URL(file, root), "utf8").split(/\r?\n/)) {
       const match = /^\s*([A-Z0-9_]+)\s*=\s*(.*)$/.exec(line);
       if (match && !process.env[match[1]]) {
         process.env[match[1]] = match[2].trim().replace(/^["']|["']$/g, "");
