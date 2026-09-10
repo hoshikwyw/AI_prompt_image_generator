@@ -21,20 +21,19 @@ export default async function EditPromptPage({ params }: PageProps<"/prompts/[id
   if (!prompt) notFound();
 
   return (
-    <div>
-      <Link
-        href={`/prompts/${prompt.id}`}
-        className="text-sm text-muted transition hover:text-foreground"
-      >
-        ← {prompt.title}
+    <div className="mx-auto max-w-2xl">
+      <Link href={`/prompts/${prompt.id}`} className="btn btn-ghost btn-sm -ml-3 max-w-full">
+        <span aria-hidden>←</span> <span className="truncate">{prompt.title}</span>
       </Link>
-      <h1 className="mb-8 mt-4 text-3xl font-semibold tracking-tight">Edit prompt</h1>
+      <h1 className="mb-7 mt-4 text-2xl font-semibold tracking-tight sm:mb-9 sm:text-3xl">
+        Edit prompt
+      </h1>
 
       <PromptForm prompt={prompt} />
 
       {/* Deleting is an editing action, so it lives here rather than on the
           detail page where it would sit next to the copy button. */}
-      <div className="mt-12 max-w-2xl border-t border-line pt-6">
+      <div className="mt-12 border-t border-line pt-6">
         <h2 className="text-sm font-medium">Danger zone</h2>
         <p className="mb-3 mt-1 text-sm text-muted">
           Deleting removes the prompt from the collection. There is no undo.

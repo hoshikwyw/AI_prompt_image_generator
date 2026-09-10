@@ -12,11 +12,13 @@ export default async function NewPromptPage() {
   if (!(await isAdmin())) redirect("/admin?next=/prompts/new");
 
   return (
-    <div>
-      <Link href="/" className="text-sm text-muted transition hover:text-foreground">
-        ← Library
+    <div className="mx-auto max-w-2xl">
+      <Link href="/" className="btn btn-ghost btn-sm -ml-3">
+        <span aria-hidden>←</span> Library
       </Link>
-      <h1 className="mb-8 mt-4 text-3xl font-semibold tracking-tight">New prompt</h1>
+      <h1 className="mb-7 mt-4 text-2xl font-semibold tracking-tight sm:mb-9 sm:text-3xl">
+        New prompt
+      </h1>
       <PromptForm />
     </div>
   );

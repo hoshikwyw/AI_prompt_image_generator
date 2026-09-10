@@ -33,6 +33,9 @@ const SORT_LABELS: Record<SortKey, string> = {
   "most-copied": "Most copied",
 };
 
+/** Beyond this the tag rail turns into a wall, so the rest hide behind a toggle. */
+const TAGS_COLLAPSED = 8;
+
 /**
  * The library. Filtering runs here rather than over the network — the whole
  * collection is a few kilobytes, and a search box that waits on a round trip
@@ -42,10 +45,12 @@ const SORT_LABELS: Record<SortKey, string> = {
 export default function Library({ prompts: initial, initialFilter, canEdit, covers }: Props) {
   const [prompts, setPrompts] = useState(initial);
   const [filter, setFilter] = useState<PromptFilter>(initialFilter);
+  const [allTagsShown, setAllTagsShown] = useState(false);
 
   const visible = useMemo(() => filterPrompts(prompts, filter), [prompts, filter]);
   // Counts stay whole-collection so chips do not vanish as you narrow.
-  const tags = useMemo(() => tagCounts(prompts).slice(0, 14), [prompts]);
+  const tags = useMemo(() => tagCounts(prompts), [prompts]);
+  const shownTags = allTagsShown ? tags : tags.slice(0, TAGS_COLLAPSED);
 
   // Keep the URL shareable without a navigation — this is view state, not a page.
   useEffect(() => {
@@ -64,65 +69,84 @@ export default function Library({ prompts: initial, initialFilter, canEdit, cove
     Boolean(filter.tag) ||
     Boolean(filter.favoritesOnly);
 
-  const chip = (active: boolean) =>
-    `rounded-full border px-3 py-1 text-xs transition ${
-      active
-        ? "border-neutral-500 bg-neutral-800 text-foreground"
-        : "border-line bg-card text-muted hover:border-neutral-600 hover:text-foreground"
-    }`;
-
   return (
     <div>
-      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Prompt library</h1>
-          <p className="mt-2 max-w-xl text-muted">
+      <header className="mb-7 flex flex-col gap-4 sm:mb-9 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
+            Prompt library
+          </h1>
+          <p className="mt-2 max-w-xl text-sm text-muted sm:text-base">
             Collect prompts that work, tag them, and copy one when you need it.
           </p>
         </div>
         <ImportExport onImported={setPrompts} canImport={canEdit} />
-      </div>
+      </header>
 
       <div className="mb-6 space-y-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <input
-            type="search"
-            value={filter.q ?? ""}
-            onChange={(e) => set({ q: e.target.value })}
-            placeholder="Search title, text, notes, tags…"
-            aria-label="Search prompts"
-            className="min-w-60 flex-1 rounded-xl border border-line bg-card px-4 py-2.5 text-sm outline-none transition placeholder:text-muted focus:border-neutral-500"
-          />
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <svg
+              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.75"
+              aria-hidden
+            >
+              <circle cx="9" cy="9" r="6" />
+              <path d="m14 14 3.5 3.5" strokeLinecap="round" />
+            </svg>
+            <input
+              type="search"
+              value={filter.q ?? ""}
+              onChange={(e) => set({ q: e.target.value })}
+              placeholder="Search prompts…"
+              aria-label="Search prompts"
+              className="field pl-10"
+            />
+          </div>
 
-          <select
-            value={filter.sort ?? "recent"}
-            onChange={(e) => set({ sort: e.target.value as SortKey })}
-            aria-label="Sort prompts"
-            className="rounded-xl border border-line bg-card px-3 py-2.5 text-sm outline-none transition focus:border-neutral-500"
-          >
-            {SORTS.map((s) => (
-              <option key={s} value={s}>
-                {SORT_LABELS[s]}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2.5">
+            <select
+              value={filter.sort ?? "recent"}
+              onChange={(e) => set({ sort: e.target.value as SortKey })}
+              aria-label="Sort prompts"
+              className="field flex-1 sm:w-48 sm:flex-none"
+            >
+              {SORTS.map((s) => (
+                <option key={s} value={s}>
+                  {SORT_LABELS[s]}
+                </option>
+              ))}
+            </select>
 
-          <button
-            type="button"
-            onClick={() => set({ favoritesOnly: !filter.favoritesOnly })}
-            aria-pressed={Boolean(filter.favoritesOnly)}
-            className={`rounded-xl border px-3 py-2.5 text-sm transition ${
-              filter.favoritesOnly
-                ? "border-amber-700 bg-amber-950/40 text-amber-300"
-                : "border-line bg-card text-muted hover:border-neutral-600 hover:text-foreground"
-            }`}
-          >
-            ★ Favourites
-          </button>
+            <button
+              type="button"
+              onClick={() => set({ favoritesOnly: !filter.favoritesOnly })}
+              aria-pressed={Boolean(filter.favoritesOnly)}
+              title="Show favourites only"
+              className={`btn btn-icon shrink-0 ${
+                filter.favoritesOnly
+                  ? "border-amber-600/60 bg-amber-500/10 text-amber-300"
+                  : "text-muted"
+              }`}
+            >
+              <span aria-hidden className="text-base leading-none">
+                {filter.favoritesOnly ? "★" : "☆"}
+              </span>
+              <span className="sr-only">Favourites only</span>
+            </button>
+          </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => set({ category: "all" })} className={chip((filter.category ?? "all") === "all")}>
+        <div className="rail">
+          <button
+            type="button"
+            onClick={() => set({ category: "all" })}
+            data-active={(filter.category ?? "all") === "all"}
+            className="chip"
+          >
             All
           </button>
           {CATEGORIES.map((category) => (
@@ -130,7 +154,8 @@ export default function Library({ prompts: initial, initialFilter, canEdit, cove
               key={category}
               type="button"
               onClick={() => set({ category })}
-              className={`${chip(filter.category === category)} capitalize`}
+              data-active={filter.category === category}
+              className="chip capitalize"
             >
               {category}
             </button>
@@ -138,31 +163,44 @@ export default function Library({ prompts: initial, initialFilter, canEdit, cove
         </div>
 
         {tags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {tags.map(({ tag, count }) => (
+          <div className="rail">
+            {shownTags.map(({ tag, count }) => (
               <button
                 key={tag}
                 type="button"
                 // Clicking the active tag clears it, so a chip is its own undo.
                 onClick={() => set({ tag: filter.tag === tag ? undefined : tag })}
-                className={chip(filter.tag === tag)}
+                data-active={filter.tag === tag}
+                className="chip"
               >
-                #{tag} <span className="text-muted">{count}</span>
+                #{tag}
+                <span className="text-subtle">{count}</span>
               </button>
             ))}
+            {tags.length > TAGS_COLLAPSED && (
+              <button
+                type="button"
+                onClick={() => setAllTagsShown((v) => !v)}
+                className="chip border-dashed"
+              >
+                {allTagsShown ? "Show fewer" : `+${tags.length - TAGS_COLLAPSED} more`}
+              </button>
+            )}
           </div>
         )}
       </div>
 
-      <div className="mb-4 flex items-center justify-between text-sm text-muted">
+      <div className="mb-4 flex items-center justify-between gap-4 text-sm text-muted">
         <span>
-          {visible.length} of {prompts.length} {prompts.length === 1 ? "prompt" : "prompts"}
+          <strong className="font-medium text-foreground">{visible.length}</strong>
+          {visible.length !== prompts.length && <> of {prompts.length}</>}{" "}
+          {prompts.length === 1 ? "prompt" : "prompts"}
         </span>
         {isFiltered && (
           <button
             type="button"
             onClick={() => setFilter({ category: "all", sort: filter.sort })}
-            className="transition hover:text-foreground"
+            className="btn btn-ghost btn-sm"
           >
             Clear filters
           </button>
@@ -170,26 +208,32 @@ export default function Library({ prompts: initial, initialFilter, canEdit, cove
       </div>
 
       {visible.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-line px-6 py-16 text-center">
-          <p className="font-medium">
+        <div className="card border-dashed px-6 py-14 text-center sm:py-20">
+          <p className="text-base font-medium">
             {prompts.length === 0 ? "Your collection is empty" : "Nothing matches those filters"}
           </p>
-          <p className="mt-1 text-sm text-muted">
+          <p className="mx-auto mt-1.5 max-w-sm text-sm text-muted">
             {prompts.length === 0
               ? "Add the first one to get started."
               : "Try a broader search, or clear the filters."}
           </p>
           {prompts.length === 0 && canEdit && (
-            <Link
-              href="/prompts/new"
-              className="mt-4 inline-block rounded-xl bg-foreground px-4 py-2 text-sm font-medium text-background transition hover:bg-white"
-            >
+            <Link href="/prompts/new" className="btn btn-primary mt-5">
               New prompt
             </Link>
           )}
+          {prompts.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setFilter({ category: "all", sort: filter.sort })}
+              className="btn mt-5"
+            >
+              Clear filters
+            </button>
+          )}
         </div>
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-3">
           {visible.map((prompt) => (
             <PromptCard
               key={prompt.id}

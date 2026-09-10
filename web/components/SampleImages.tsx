@@ -123,13 +123,13 @@ export default function SampleImages({
             maxLength={MAX_CAPTION}
             placeholder="Caption (optional)"
             aria-label="Caption for the next upload"
-            className="min-w-48 flex-1 rounded-xl border border-line bg-card px-3 py-2 text-sm outline-none transition placeholder:text-muted focus:border-neutral-500"
+            className="field min-w-0 flex-1"
           />
           <button
             type="button"
             disabled={busy}
             onClick={() => fileInput.current?.click()}
-            className="rounded-xl border border-line px-3 py-2 text-sm text-muted transition hover:border-neutral-600 hover:text-foreground disabled:opacity-50"
+            className="btn shrink-0"
           >
             {busy ? "Uploading…" : "Add sample"}
           </button>

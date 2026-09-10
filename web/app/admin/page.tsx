@@ -17,14 +17,14 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
   const signedIn = await isAdmin();
 
   return (
-    <div className="max-w-xl">
-      <Link href="/" className="text-sm text-muted transition hover:text-foreground">
-        ← Library
+    <div className="mx-auto max-w-xl">
+      <Link href="/" className="btn btn-ghost btn-sm -ml-3">
+        <span aria-hidden>←</span> Library
       </Link>
-      <h1 className="mb-6 mt-4 text-3xl font-semibold tracking-tight">Admin</h1>
+      <h1 className="mb-6 mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">Admin</h1>
 
       {policy === "open" && (
-        <div className="rounded-xl border border-line bg-card px-5 py-4 text-sm">
+        <div className="card px-5 py-4 text-sm">
           <p className="font-medium">No passphrase set</p>
           <p className="mt-1 text-muted">
             The collection is the local file on this machine, so editing is open. Set{" "}
@@ -34,7 +34,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
       )}
 
       {policy === "locked" && (
-        <div className="rounded-xl border border-amber-900/60 bg-amber-950/30 px-5 py-4 text-sm">
+        <div className="rounded-[var(--radius-lg)] border border-amber-900/60 bg-amber-950/30 px-5 py-4 text-sm">
           <p className="font-medium text-amber-200">Editing is disabled</p>
           <p className="mt-1 text-amber-200/70">
             This collection lives in Supabase, where anyone could reach it, and no{" "}
@@ -48,11 +48,8 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
         (signedIn ? (
           <div className="space-y-4">
             <p className="text-sm text-muted">You are signed in and can edit the collection.</p>
-            <div className="flex items-center gap-3">
-              <Link
-                href="/prompts/new"
-                className="rounded-xl bg-foreground px-4 py-2 text-sm font-medium text-background transition hover:bg-white"
-              >
+            <div className="flex flex-wrap items-center gap-3">
+              <Link href="/prompts/new" className="btn btn-primary">
                 New prompt
               </Link>
               <AdminSignOut />

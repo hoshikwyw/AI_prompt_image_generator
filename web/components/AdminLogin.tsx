@@ -48,7 +48,7 @@ export default function AdminLogin({ next }: { next: string }) {
           onChange={(e) => setPassphrase(e.target.value)}
           autoComplete="current-password"
           autoFocus
-          className="w-full rounded-xl border border-line bg-card px-4 py-2.5 text-sm outline-none transition focus:border-neutral-500"
+          className="field"
         />
       </div>
 
@@ -57,7 +57,7 @@ export default function AdminLogin({ next }: { next: string }) {
       <button
         type="submit"
         disabled={busy || !passphrase}
-        className="rounded-xl bg-foreground px-4 py-2.5 text-sm font-medium text-background transition hover:bg-white disabled:opacity-50"
+        className="btn btn-primary w-full sm:w-auto"
       >
         {busy ? "Checking…" : "Sign in"}
       </button>

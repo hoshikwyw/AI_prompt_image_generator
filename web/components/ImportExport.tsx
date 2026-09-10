@@ -83,7 +83,7 @@ export default function ImportExport({
         <a
           href="/api/prompts/export"
           download
-          className="rounded-xl border border-line px-3 py-1.5 text-muted transition hover:border-neutral-600 hover:text-foreground"
+          className="btn btn-sm"
         >
           Export
         </a>
@@ -94,10 +94,8 @@ export default function ImportExport({
               type="button"
               onClick={pickFile}
               disabled={busy}
-              className={`rounded-xl border px-3 py-1.5 transition disabled:opacity-50 ${
-                armed
-                  ? "border-red-700 bg-red-950/50 text-red-300"
-                  : "border-line text-muted hover:border-neutral-600 hover:text-foreground"
+              className={`btn btn-sm ${
+                armed ? "border-red-600/60 bg-red-500/10 text-red-300" : "text-muted"
               }`}
             >
               {busy ? "Importing…" : armed ? "Click again to replace all" : "Import"}
@@ -110,7 +108,7 @@ export default function ImportExport({
                 setArmed(false);
               }}
               aria-label="Import mode"
-              className="rounded-xl border border-line bg-card px-2 py-1.5 text-xs text-muted outline-none transition focus:border-neutral-500"
+              className="field h-[2.125rem] min-h-0 w-auto py-0 text-xs"
             >
               <option value="merge">Merge</option>
               <option value="replace">Replace all</option>

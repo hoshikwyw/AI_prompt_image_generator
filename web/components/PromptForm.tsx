@@ -22,8 +22,8 @@ interface Props {
 
 type Errors = Record<string, string>;
 
-const field =
-  "w-full rounded-xl border border-line bg-card px-4 py-2.5 text-sm outline-none transition placeholder:text-muted focus:border-neutral-500";
+/** The shared input treatment lives in globals.css, so every field matches. */
+const field = "field";
 
 /**
  * One form for both create and edit — the fields and rules are identical, and
@@ -108,7 +108,7 @@ export default function PromptForm({ prompt }: Props) {
     errors[key] ? <p className="mt-1 text-xs text-red-400">{errors[key]}</p> : null;
 
   return (
-    <form onSubmit={submit} className="max-w-2xl space-y-6">
+    <form onSubmit={submit} className="max-w-2xl space-y-6 pb-24 sm:pb-0">
       <div>
         <label htmlFor="title" className="mb-1.5 block text-sm font-medium">
           Title
@@ -257,8 +257,10 @@ export default function PromptForm({ prompt }: Props) {
               onClick={() => set("accent", accent)}
               aria-label={`Accent ${accent}`}
               aria-pressed={draft.accent === accent}
-              className={`h-8 w-14 rounded-lg bg-linear-to-r ${accent} ring-offset-2 ring-offset-background transition ${
-                draft.accent === accent ? "ring-2 ring-neutral-300" : "opacity-60 hover:opacity-100"
+              className={`h-10 w-16 rounded-xl bg-linear-to-r ${accent} ring-offset-2 ring-offset-background transition ${
+                draft.accent === accent
+                  ? "ring-2 ring-white/80"
+                  : "opacity-50 hover:opacity-100"
               }`}
             />
           ))}
@@ -271,17 +273,15 @@ export default function PromptForm({ prompt }: Props) {
         </p>
       )}
 
-      <div className="flex items-center gap-3 border-t border-line pt-6">
-        <button
-          type="submit"
-          disabled={submitting}
-          className="rounded-xl bg-foreground px-4 py-2.5 text-sm font-medium text-background transition hover:bg-white disabled:opacity-50"
-        >
+      {/* Pinned to the bottom of a phone screen so Save is reachable without
+          scrolling back down a long form; a normal row from `sm` up. */}
+      <div className="sticky-actions fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 border-t border-line bg-background/90 px-4 pt-3 backdrop-blur-md sm:static sm:bg-transparent sm:px-0 sm:pt-6 sm:backdrop-blur-none">
+        <button type="submit" disabled={submitting} className="btn btn-primary flex-1 sm:flex-none">
           {submitting ? "Saving…" : editing ? "Save changes" : "Add prompt"}
         </button>
         <Link
           href={editing ? `/prompts/${prompt!.id}` : "/"}
-          className="text-sm text-muted transition hover:text-foreground"
+          className="btn btn-ghost flex-1 sm:flex-none"
         >
           Cancel
         </Link>

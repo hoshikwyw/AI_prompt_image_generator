@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -13,6 +13,13 @@ export const metadata: Metadata = {
   description: "Collect, tag and search the AI prompts that actually work.",
 };
 
+export const viewport: Viewport = {
+  themeColor: "#0a0c12",
+  // No maximum-scale: pinch-zoom is an accessibility feature, not a bug.
+  width: "device-width",
+  initialScale: 1,
+};
+
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const admin = await isAdmin();
 
@@ -21,25 +28,36 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        <header className="border-b border-line">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-            <Link href="/" className="text-lg font-semibold tracking-tight">
+      <body className="flex min-h-full flex-col">
+        {/* Sticky so the way back to the library is always one tap away on a
+            phone, where the page can be very long. */}
+        <header className="sticky top-0 z-50 border-b border-line bg-background/80 backdrop-blur-md">
+          <div className="shell flex h-14 items-center justify-between gap-3 sm:h-16">
+            <Link
+              href="/"
+              className="group flex items-center gap-2.5 rounded-lg text-base font-semibold tracking-tight sm:text-lg"
+            >
+              <span
+                className="h-6 w-6 rounded-lg bg-linear-to-br from-indigo-400 to-fuchsia-500 shadow-sm transition group-hover:scale-105 sm:h-7 sm:w-7"
+                aria-hidden
+              />
               Promptbook
             </Link>
-            <nav className="flex items-center gap-4">
+
+            <nav className="flex items-center gap-2">
               {admin ? (
-                <Link
-                  href="/prompts/new"
-                  className="rounded-xl border border-line px-3 py-1.5 text-sm transition hover:border-neutral-600"
-                >
-                  New prompt
-                </Link>
+                <>
+                  <Link href="/admin" className="btn btn-ghost btn-sm hidden sm:inline-flex">
+                    Admin
+                  </Link>
+                  <Link href="/prompts/new" className="btn btn-primary btn-sm">
+                    <span aria-hidden>+</span>
+                    <span className="hidden xs:inline">New prompt</span>
+                    <span className="xs:hidden">New</span>
+                  </Link>
+                </>
               ) : (
-                <Link
-                  href="/admin"
-                  className="text-xs text-muted transition hover:text-foreground"
-                >
+                <Link href="/admin" className="btn btn-ghost btn-sm">
                   Admin
                 </Link>
               )}
@@ -47,19 +65,20 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">{children}</main>
+        <main className="shell w-full flex-1 py-8 sm:py-10 lg:py-12">{children}</main>
 
-        <footer className="border-t border-line">
-          <div className="mx-auto max-w-6xl px-6 py-5 text-xs text-muted">
-            {activeBackend() === "supabase" ? (
-              <>Prompts are stored in Supabase.</>
-            ) : (
-              <>
-                Prompts are stored in <code className="font-mono">.data/collection.json</code> on
-                this machine — set the Supabase keys to share them.
-              </>
-            )}{" "}
-            Image generation is parked until an API key is available.
+        <footer className="mt-8 border-t border-line">
+          <div className="shell flex flex-col gap-1.5 py-6 text-xs leading-relaxed text-subtle sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+            <p>
+              {activeBackend() === "supabase" ? (
+                <>Prompts are stored in Supabase.</>
+              ) : (
+                <>
+                  Stored locally in <code className="font-mono">.data/collection.json</code>.
+                </>
+              )}
+            </p>
+            <p>Image generation is parked until an API key is available.</p>
           </div>
         </footer>
       </body>

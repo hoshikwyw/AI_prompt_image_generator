@@ -17,7 +17,7 @@ export default function AdminSignOut() {
         router.push("/");
         router.refresh();
       }}
-      className="rounded-xl border border-line px-3 py-2 text-sm text-muted transition hover:border-neutral-600 hover:text-foreground disabled:opacity-50"
+      className="btn"
     >
       {busy ? "Signing out…" : "Sign out"}
     </button>

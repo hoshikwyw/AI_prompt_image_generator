@@ -32,25 +32,29 @@ export default async function PromptPage({ params }: PageProps<"/prompts/[id]">)
   if (prompt.source) meta.push(["Source", prompt.source]);
 
   return (
-    <article>
+    <article className="mx-auto max-w-3xl">
       <div className="flex items-center justify-between gap-4">
-        <Link href="/" className="text-sm text-muted transition hover:text-foreground">
-          ← Library
+        <Link href="/" className="btn btn-ghost btn-sm -ml-3">
+          <span aria-hidden>←</span> Library
         </Link>
         {canEdit && (
-          <Link
-            href={`/prompts/${prompt.id}/edit`}
-            className="rounded-xl border border-line px-3 py-1.5 text-sm transition hover:border-neutral-600"
-          >
+          <Link href={`/prompts/${prompt.id}/edit`} className="btn btn-sm">
             Edit
           </Link>
         )}
       </div>
 
-      <header className="mb-8 mt-4">
-        <div className={`mb-5 h-1.5 w-24 rounded-full bg-linear-to-r ${prompt.accent}`} aria-hidden />
-        <h1 className="text-3xl font-semibold tracking-tight">{prompt.title}</h1>
-        {prompt.summary && <p className="mt-2 max-w-2xl text-muted">{prompt.summary}</p>}
+      <header className="mb-7 mt-5 sm:mb-9">
+        <div
+          className={`mb-5 h-1 w-20 rounded-full bg-linear-to-r ${prompt.accent}`}
+          aria-hidden
+        />
+        <h1 className="text-2xl font-semibold leading-tight tracking-tight sm:text-3xl lg:text-4xl">
+          {prompt.title}
+        </h1>
+        {prompt.summary && (
+          <p className="mt-3 text-base text-muted sm:text-lg">{prompt.summary}</p>
+        )}
 
         {prompt.tags.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-1.5">
@@ -58,7 +62,7 @@ export default async function PromptPage({ params }: PageProps<"/prompts/[id]">)
               <Link
                 key={tag}
                 href={`/?tag=${encodeURIComponent(tag)}`}
-                className="rounded-full bg-card px-2.5 py-1 text-[11px] text-muted transition hover:text-foreground"
+                className="rounded-full border border-line bg-surface px-2.5 py-1 text-xs text-muted transition hover:border-line-strong hover:text-foreground"
               >
                 #{tag}
               </Link>
@@ -67,13 +71,14 @@ export default async function PromptPage({ params }: PageProps<"/prompts/[id]">)
         )}
       </header>
 
-      <section className="rounded-2xl border border-line bg-card">
-        <div className="flex items-center justify-between gap-4 border-b border-line px-5 py-3">
+      <section className="card overflow-hidden">
+        <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3 sm:px-5">
           <h2 className="text-sm font-medium">Prompt</h2>
           <PromptActions prompt={prompt} canEdit={canEdit} showCopies />
         </div>
-        {/* Pre-wrap, not a textarea: the exact whitespace is part of the prompt. */}
-        <p className="whitespace-pre-wrap px-5 py-4 font-mono text-sm leading-relaxed">
+        {/* Pre-wrap, not a textarea: the exact whitespace is part of the prompt.
+            break-words stops a long unbroken string scrolling the page sideways. */}
+        <p className="whitespace-pre-wrap break-words px-4 py-4 font-mono text-[0.8125rem] leading-relaxed sm:px-5 sm:text-sm">
           {prompt.body}
         </p>
       </section>
@@ -81,19 +86,17 @@ export default async function PromptPage({ params }: PageProps<"/prompts/[id]">)
       <SampleImages promptId={prompt.id} images={images} canEdit={canEdit} />
 
       {prompt.notes && (
-        <section className="mt-6">
+        <section className="mt-8">
           <h2 className="mb-2 text-sm font-medium">Notes</h2>
-          <p className="max-w-2xl whitespace-pre-wrap text-sm leading-relaxed text-muted">
-            {prompt.notes}
-          </p>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted">{prompt.notes}</p>
         </section>
       )}
 
-      <dl className="mt-8 grid grid-cols-2 gap-4 border-t border-line pt-6 text-sm sm:grid-cols-4">
+      <dl className="mt-8 grid grid-cols-2 gap-x-4 gap-y-5 border-t border-line pt-6 text-sm sm:grid-cols-4">
         {meta.map(([label, value]) => (
-          <div key={label}>
-            <dt className="text-xs text-muted">{label}</dt>
-            <dd className="mt-0.5 truncate capitalize" title={value}>
+          <div key={label} className="min-w-0">
+            <dt className="text-xs text-subtle">{label}</dt>
+            <dd className="mt-1 truncate capitalize" title={value}>
               {value}
             </dd>
           </div>

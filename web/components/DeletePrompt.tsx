@@ -42,10 +42,10 @@ export default function DeletePrompt({ id, title }: { id: string; title: string 
         onClick={onClick}
         disabled={busy}
         aria-label={armed ? `Confirm deleting ${title}` : `Delete ${title}`}
-        className={`rounded-xl border px-3 py-2 text-sm transition disabled:opacity-50 ${
+        className={`btn ${
           armed
-            ? "border-red-700 bg-red-950/50 text-red-300"
-            : "border-line text-muted hover:border-red-900 hover:text-red-300"
+            ? "border-red-600/60 bg-red-500/10 text-red-300"
+            : "text-muted hover:border-red-900/70 hover:text-red-300"
         }`}
       >
         {busy ? "Deleting…" : armed ? "Click again to delete" : "Delete"}

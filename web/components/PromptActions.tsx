@@ -77,18 +77,43 @@ export default function PromptActions({
 
   return (
     <div className="flex items-center gap-2">
+      {showCopies && copies > 0 && (
+        <span className="hidden text-xs text-subtle sm:inline">
+          copied {copies}×
+        </span>
+      )}
+
       <button
         type="button"
         onClick={copy}
         aria-label={`Copy the ${prompt.title} prompt`}
-        className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
+        className={`btn btn-sm ${
           copyState === "copied"
-            ? "border-emerald-700 bg-emerald-950/40 text-emerald-300"
+            ? "border-emerald-600/60 bg-emerald-500/10 text-emerald-300"
             : copyState === "failed"
-              ? "border-red-800 bg-red-950/40 text-red-300"
-              : "border-line bg-background text-foreground hover:border-neutral-600"
+              ? "border-red-600/60 bg-red-500/10 text-red-300"
+              : ""
         }`}
       >
+        <svg
+          className="h-3.5 w-3.5"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          {copyState === "copied" ? (
+            <path d="m3.5 8.5 3 3 6-6.5" />
+          ) : (
+            <>
+              <rect x="5.5" y="5.5" width="8" height="8" rx="1.75" />
+              <path d="M10.5 3.5a1.75 1.75 0 0 0-1.75-1.75h-5A1.75 1.75 0 0 0 2 3.5v5c0 .966.784 1.75 1.75 1.75" />
+            </>
+          )}
+        </svg>
         {copyLabel}
       </button>
 
@@ -99,20 +124,14 @@ export default function PromptActions({
           aria-pressed={favorite}
           aria-label={favorite ? "Remove from favourites" : "Add to favourites"}
           title={favorite ? "Remove from favourites" : "Add to favourites"}
-          className={`rounded-lg border px-2 py-1.5 text-xs leading-none transition ${
-            favorite
-              ? "border-amber-700 bg-amber-950/40 text-amber-300"
-              : "border-line bg-background text-muted hover:border-neutral-600 hover:text-foreground"
+          className={`btn btn-sm btn-icon ${
+            favorite ? "border-amber-600/60 bg-amber-500/10 text-amber-300" : "text-muted"
           }`}
         >
-          {favorite ? "★" : "☆"}
+          <span aria-hidden className="text-sm leading-none">
+            {favorite ? "★" : "☆"}
+          </span>
         </button>
-      )}
-
-      {showCopies && (
-        <span className="text-xs text-muted">
-          copied {copies} {copies === 1 ? "time" : "times"}
-        </span>
       )}
     </div>
   );
