@@ -6,6 +6,7 @@ import ImportExport from "./ImportExport";
 import PromptCard from "./PromptCard";
 import {
   CATEGORIES,
+  DEFAULT_SORT,
   SORTS,
   filterPrompts,
   filterToQuery,
@@ -109,7 +110,7 @@ export default function Library({ prompts: initial, initialFilter, canEdit, cove
 
           <div className="flex items-center gap-2.5">
             <select
-              value={filter.sort ?? "recent"}
+              value={filter.sort ?? DEFAULT_SORT}
               onChange={(e) => set({ sort: e.target.value as SortKey })}
               aria-label="Sort prompts"
               className="field flex-1 sm:w-48 sm:flex-none"

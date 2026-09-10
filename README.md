@@ -76,6 +76,33 @@ lib/admin.ts         who may write
 4. Carry your local collection across, if you have one: `npm run supabase:migrate -- --dry-run`
    first, then without the flag.
 
+## Deploying to Vercel
+
+The app lives in `web/`, not the repo root, so two settings are not the defaults:
+
+| Setting | Value |
+|---|---|
+| **Root Directory** | `web` |
+| **Framework preset** | Next.js (detected once the root is right) |
+
+Then add the environment variables from `web/.env.example` under **Settings → Environment
+Variables**. `SUPABASE_URL` and `SUPABASE_ANON_KEY` are the minimum; without them the app falls
+back to the local JSON backend, whose filesystem is read-only on Vercel — it will serve the seed
+prompts and refuse every write, and the footer will say so.
+
+Set `ADMIN_PASSPHRASE` too. On a shared collection, writes are refused outright without one, so
+you would not be able to edit anything through the deployed site.
+
+Three things to know about the free tier specifically:
+
+- **Uploads are capped at 4 MB** (`MAX_SAMPLE_BYTES`), because Hobby rejects larger request bodies
+  at the edge before any of this code runs.
+- **Login throttling is per-instance.** `lib/admin.ts` counts attempts in memory, and serverless
+  means many instances, so the real limit is looser than the 10-per-15-minutes it claims. Fine for
+  a small private collection; move the counter into Postgres before advertising the URL widely.
+- **The copy counter is unauthenticated**, so "most copied" is gameable by anyone who can reach
+  the page. It is social proof, not analytics.
+
 ### Who can write
 
 Reading is public — that is the point. Writing depends on what a write would reach:

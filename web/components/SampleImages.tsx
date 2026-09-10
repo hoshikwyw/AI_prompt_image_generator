@@ -2,7 +2,13 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { MAX_CAPTION, MAX_SAMPLE_BYTES, type PromptImage } from "@/lib/prompt";
+import Lightbox from "./Lightbox";
+import {
+  MAX_CAPTION,
+  MAX_SAMPLE_BYTES,
+  MAX_SAMPLE_LABEL,
+  type PromptImage,
+} from "@/lib/prompt";
 
 /**
  * The sample gallery on a prompt's page, and — for an admin — the controls to
@@ -16,10 +22,13 @@ export default function SampleImages({
   promptId,
   images: initial,
   canEdit,
+  promptBody,
 }: {
   promptId: string;
   images: PromptImage[];
   canEdit: boolean;
+  /** Offered inside the lightbox, so a sample leads straight to the prompt. */
+  promptBody?: string;
 }) {
   const router = useRouter();
   const fileInput = useRef<HTMLInputElement>(null);
@@ -27,6 +36,7 @@ export default function SampleImages({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
+  const [openAt, setOpenAt] = useState<number | null>(null);
 
   async function upload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -35,7 +45,7 @@ export default function SampleImages({
     if (!file) return;
 
     if (file.size > MAX_SAMPLE_BYTES) {
-      setError("That image is over 12 MB.");
+      setError(`That image is over ${MAX_SAMPLE_LABEL}. Try a smaller export or a screenshot.`);
       return;
     }
 
@@ -84,19 +94,26 @@ export default function SampleImages({
 
       {images.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {images.map((image) => (
+          {images.map((image, index) => (
             <figure key={image.id} className="overflow-hidden rounded-xl border border-line bg-card">
-              {/* Plain img: these are user uploads on an origin the image
-                  optimiser is not configured for. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={image.url}
-                alt={image.caption || "Sample output for this prompt"}
-                width={image.width ?? undefined}
-                height={image.height ?? undefined}
-                loading="lazy"
-                className="aspect-4/3 w-full object-cover"
-              />
+              <button
+                type="button"
+                onClick={() => setOpenAt(index)}
+                aria-label={`View ${image.caption || "sample"} full size`}
+                className="group block w-full cursor-zoom-in"
+              >
+                {/* Plain img: these are user uploads on an origin the image
+                    optimiser is not configured for. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={image.url}
+                  alt={image.caption || "Sample output for this prompt"}
+                  width={image.width ?? undefined}
+                  height={image.height ?? undefined}
+                  loading="lazy"
+                  className="aspect-4/3 w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                />
+              </button>
               <figcaption className="flex items-center justify-between gap-3 px-3 py-2 text-xs text-muted">
                 <span className="truncate">{image.caption || "Sample"}</span>
                 {canEdit && (
@@ -149,6 +166,14 @@ export default function SampleImages({
           No samples yet. Add one so the card shows what this prompt produces.
         </p>
       )}
+
+      <Lightbox
+        images={images}
+        openAt={openAt}
+        onClose={() => setOpenAt(null)}
+        onNavigate={setOpenAt}
+        promptBody={promptBody}
+      />
     </section>
   );
 }

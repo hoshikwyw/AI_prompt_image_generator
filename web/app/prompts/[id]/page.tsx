@@ -83,7 +83,12 @@ export default async function PromptPage({ params }: PageProps<"/prompts/[id]">)
         </p>
       </section>
 
-      <SampleImages promptId={prompt.id} images={images} canEdit={canEdit} />
+      <SampleImages
+        promptId={prompt.id}
+        images={images}
+        canEdit={canEdit}
+        promptBody={prompt.body}
+      />
 
       {prompt.notes && (
         <section className="mt-8">

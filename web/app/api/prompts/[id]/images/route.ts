@@ -1,5 +1,10 @@
 import { requireAdmin } from "@/lib/admin";
-import { ACCEPTED_SAMPLE_MIME, MAX_CAPTION, MAX_SAMPLE_BYTES } from "@/lib/prompt";
+import {
+  ACCEPTED_SAMPLE_MIME,
+  MAX_CAPTION,
+  MAX_SAMPLE_BYTES,
+  MAX_SAMPLE_LABEL,
+} from "@/lib/prompt";
 import { prepareSample } from "@/lib/sample-image";
 import { addImage, listImages } from "@/lib/store";
 
@@ -37,7 +42,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/prompts/[id
   const file = form.get("image");
   if (!(file instanceof File)) return fail("No image uploaded.", 400);
   if (file.size === 0) return fail("That file is empty.", 400);
-  if (file.size > MAX_SAMPLE_BYTES) return fail("Images are capped at 12 MB.", 413);
+  if (file.size > MAX_SAMPLE_BYTES) return fail(`Images are capped at ${MAX_SAMPLE_LABEL}.`, 413);
   if (!ACCEPTED_SAMPLE_MIME.includes(file.type)) {
     return fail(`Unsupported image type "${file.type}". Use JPEG, PNG, WebP or AVIF.`, 415);
   }

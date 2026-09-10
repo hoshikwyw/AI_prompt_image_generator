@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { copyText } from "@/lib/copy";
 import type { Prompt } from "@/lib/prompt";
 
 interface Props {
@@ -31,20 +32,21 @@ export default function PromptActions({
   const [favorite, setFavorite] = useState(prompt.favorite);
   const [copies, setCopies] = useState(prompt.copies);
   const [copyState, setCopyState] = useState<CopyState>("idle");
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const textRef = useRef<HTMLTextAreaElement>(null);
 
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(prompt.body);
-    } catch {
-      // Clipboard access needs a secure context; over plain http it throws.
-      setCopyState("failed");
-      window.setTimeout(() => setCopyState("idle"), 2400);
-      return;
-    }
+  // Opening via showModal() rather than the `open` attribute is what gets the
+  // focus trap, the backdrop and Esc-to-close for free.
+  useEffect(() => {
+    if (copyState !== "failed") return;
+    const dialog = dialogRef.current;
+    if (!dialog || dialog.open) return;
+    dialog.showModal();
+    // Pre-select so the reader only has to press Ctrl+C.
+    textRef.current?.select();
+  }, [copyState]);
 
-    setCopyState("copied");
-    window.setTimeout(() => setCopyState("idle"), 1600);
-
+  function countCopy() {
     const next = copies + 1;
     setCopies(next);
     onChange?.({ copies: next });
@@ -53,6 +55,17 @@ export default function PromptActions({
     void fetch(`/api/prompts/${prompt.id}/copy`, { method: "POST", keepalive: true }).catch(
       () => {},
     );
+  }
+
+  async function copy() {
+    if (await copyText(prompt.body)) {
+      setCopyState("copied");
+      window.setTimeout(() => setCopyState("idle"), 1600);
+      countCopy();
+      return;
+    }
+    // Every clipboard route failed — show the text so it can be copied by hand.
+    setCopyState("failed");
   }
 
   async function toggleFavorite() {
@@ -72,15 +85,10 @@ export default function PromptActions({
     }
   }
 
-  const copyLabel =
-    copyState === "copied" ? "Copied" : copyState === "failed" ? "Copy failed" : "Copy";
-
   return (
     <div className="flex items-center gap-2">
       {showCopies && copies > 0 && (
-        <span className="hidden text-xs text-subtle sm:inline">
-          copied {copies}×
-        </span>
+        <span className="hidden text-xs text-subtle sm:inline">copied {copies}×</span>
       )}
 
       <button
@@ -88,11 +96,7 @@ export default function PromptActions({
         onClick={copy}
         aria-label={`Copy the ${prompt.title} prompt`}
         className={`btn btn-sm ${
-          copyState === "copied"
-            ? "border-emerald-600/60 bg-emerald-500/10 text-emerald-300"
-            : copyState === "failed"
-              ? "border-red-600/60 bg-red-500/10 text-red-300"
-              : ""
+          copyState === "copied" ? "border-emerald-600/60 bg-emerald-500/10 text-emerald-300" : ""
         }`}
       >
         <svg
@@ -114,7 +118,7 @@ export default function PromptActions({
             </>
           )}
         </svg>
-        {copyLabel}
+        {copyState === "copied" ? "Copied" : "Copy"}
       </button>
 
       {canEdit && (
@@ -133,6 +137,43 @@ export default function PromptActions({
           </span>
         </button>
       )}
+
+      {/* Last resort: the browser refused every clipboard route, so the text is
+          put on screen, selected, for a manual copy. */}
+      <dialog
+        ref={dialogRef}
+        onClose={() => setCopyState("idle")}
+        className="modal w-[min(36rem,calc(100vw-2rem))]"
+      >
+        <div className="p-5">
+          <h2 className="text-base font-medium">Copy it manually</h2>
+          <p className="mt-1 text-sm text-muted">
+            This browser blocked clipboard access — usually because the page is not on HTTPS. The
+            prompt is selected below; press{" "}
+            <kbd className="rounded border border-line bg-background px-1.5 py-0.5 font-mono text-xs">
+              Ctrl+C
+            </kbd>{" "}
+            (or <kbd className="rounded border border-line bg-background px-1.5 py-0.5 font-mono text-xs">⌘C</kbd>).
+          </p>
+          <textarea
+            ref={textRef}
+            readOnly
+            value={prompt.body}
+            rows={8}
+            onFocus={(e) => e.currentTarget.select()}
+            className="field mt-4 font-mono text-xs leading-relaxed"
+          />
+          <div className="mt-4 flex justify-end">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => dialogRef.current?.close()}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      </dialog>
     </div>
   );
 }

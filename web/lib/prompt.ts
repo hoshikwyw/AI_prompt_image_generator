@@ -86,7 +86,16 @@ export const MAX_CAPTION = 200;
  * them, so the browser can check a file before sending it without dragging a
  * native image library into the client bundle.
  */
-export const MAX_SAMPLE_BYTES = 12 * 1024 * 1024;
+/**
+ * 4 MB, not something rounder, because Vercel's Hobby tier rejects request
+ * bodies over ~4.5 MB at the platform edge — before any of our code runs. A
+ * larger cap here would mean the user sees an opaque 413 from the host instead
+ * of a message explaining what to do.
+ */
+export const MAX_SAMPLE_BYTES = 4 * 1024 * 1024;
+
+/** For messages, so the number quoted to the user cannot drift from the cap. */
+export const MAX_SAMPLE_LABEL = `${Math.round(MAX_SAMPLE_BYTES / (1024 * 1024))} MB`;
 export const ACCEPTED_SAMPLE_MIME = ["image/jpeg", "image/png", "image/webp", "image/avif"];
 
 /** The fields a caller may set. Everything else is owned by the store. */
@@ -210,7 +219,14 @@ export interface PromptFilter {
   sort?: SortKey;
 }
 
-export const SORTS = ["recent", "oldest", "title", "most-copied"] as const;
+export const SORTS = ["most-copied", "recent", "oldest", "title"] as const;
+
+/**
+ * What a visitor sees first. Most-copied is social proof — it surfaces what
+ * actually works without anyone curating it — and it degrades to recency on a
+ * new collection, since the comparator breaks ties on updatedAt.
+ */
+export const DEFAULT_SORT: SortKey = "most-copied";
 export type SortKey = (typeof SORTS)[number];
 
 /** Pure so the library page can filter on the client and the API on the server. */
@@ -237,7 +253,7 @@ export function filterPrompts(prompts: Prompt[], filter: PromptFilter = {}): Pro
     title: (a, b) => a.title.localeCompare(b.title),
     "most-copied": (a, b) => b.copies - a.copies || b.updatedAt.localeCompare(a.updatedAt),
   };
-  return out.sort(by[filter.sort ?? "recent"]);
+  return out.sort(by[filter.sort ?? DEFAULT_SORT]);
 }
 
 /** Tag -> count, most used first. Drives the filter chips. */
@@ -265,7 +281,7 @@ export function parseFilter(get: (key: string) => string | null | undefined): Pr
     category: CATEGORIES.includes(category as Category) ? (category as Category) : "all",
     tag: get("tag")?.trim() || undefined,
     favoritesOnly: get("favorites") === "1",
-    sort: SORTS.includes(sort as SortKey) ? (sort as SortKey) : "recent",
+    sort: SORTS.includes(sort as SortKey) ? (sort as SortKey) : DEFAULT_SORT,
   };
 }
 
@@ -276,6 +292,6 @@ export function filterToQuery(filter: PromptFilter): string {
   if (filter.category && filter.category !== "all") params.set("category", filter.category);
   if (filter.tag) params.set("tag", filter.tag);
   if (filter.favoritesOnly) params.set("favorites", "1");
-  if (filter.sort && filter.sort !== "recent") params.set("sort", filter.sort);
+  if (filter.sort && filter.sort !== DEFAULT_SORT) params.set("sort", filter.sort);
   return params.toString();
 }

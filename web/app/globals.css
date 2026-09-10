@@ -359,6 +359,28 @@
     }
   }
 
+  /* Native <dialog>, opened with showModal() so the focus trap, backdrop and
+     Esc-to-close come from the platform rather than a library. */
+  .modal {
+    margin: auto;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    color: var(--foreground);
+    box-shadow: var(--shadow-lifted);
+    max-height: calc(100dvh - 2rem);
+  }
+
+  .modal::backdrop {
+    background: rgb(0 0 0 / 0.7);
+    backdrop-filter: blur(2px);
+  }
+
+  .modal-wide {
+    width: min(64rem, calc(100vw - 1.5rem));
+  }
+
   /* A bar pinned to the bottom of a phone screen has to clear the home
      indicator; from `sm` up it is an ordinary row again and wants no extra. */
   .sticky-actions {

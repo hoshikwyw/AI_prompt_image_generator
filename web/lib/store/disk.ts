@@ -94,8 +94,21 @@ async function readCollection(): Promise<Collection> {
     throw new Error(`${FILE} is not a valid collection file`);
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+
     const seeded: Collection = { version: VERSION, prompts: seedPrompts(), images: [] };
-    await writeCollection(seeded);
+    try {
+      await writeCollection(seeded);
+    } catch (writeError) {
+      // A read-only filesystem — a serverless host, most likely, where this
+      // backend was never the intention. Reads still work off the seed in
+      // memory, so the deploy shows something instead of a 500, and the footer
+      // says which backend is live. Writes will still fail, loudly, which is
+      // correct: the fix is to set the Supabase credentials.
+      console.warn(
+        `Could not write ${FILE} (${(writeError as Error).message}). ` +
+          "Serving the seed read-only — set SUPABASE_URL and SUPABASE_ANON_KEY to persist.",
+      );
+    }
     return seeded;
   }
 }
