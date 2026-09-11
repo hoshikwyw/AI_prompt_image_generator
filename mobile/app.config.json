@@ -1,4 +1,4 @@
 {
   "$comment": "The deployed site the Android app opens. Set serverUrl to your Vercel URL (https://…), then run `npm run sync` and rebuild. Read by capacitor.config.ts and scripts/prepare-www.mjs.",
-  "serverUrl": ""
+  "serverUrl": "https://ai-prompt-image-generator-five.vercel.app"
 }
