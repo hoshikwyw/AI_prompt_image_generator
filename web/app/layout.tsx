@@ -37,9 +37,17 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               href="/"
               className="group flex items-center gap-2.5 rounded-lg text-base font-semibold tracking-tight sm:text-lg"
             >
-              <span
-                className="h-6 w-6 rounded-lg bg-linear-to-br from-indigo-400 to-fuchsia-500 shadow-sm transition group-hover:scale-105 sm:h-7 sm:w-7"
-                aria-hidden
+              {/* The favicon file itself, not a copy of it: the design lives in
+                  scripts/generate-icons.mjs, so the header can never drift from
+                  the browser tab or the app icon. alt="" because the name sits
+                  right next to it. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/icon.svg"
+                alt=""
+                width={28}
+                height={28}
+                className="h-7 w-7 shrink-0 transition group-hover:scale-105 group-hover:-rotate-3 sm:h-8 sm:w-8"
               />
               Promptbook
             </Link>
