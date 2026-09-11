@@ -11,6 +11,7 @@ deleted. See [HISTORY.md](HISTORY.md) for what each phase delivered and why.
 probe/      Phase 0 — provider comparison harness (dormant)
 web/        Phase 1 — the generator app · Phase 2 — the prompt collection
 supabase/   Phase 3 — schema, RLS and the storage bucket
+mobile/     Android app — a Capacitor shell around the deployed site
 ```
 
 ## Quick start

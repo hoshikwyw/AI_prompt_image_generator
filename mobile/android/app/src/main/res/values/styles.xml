@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
+    <!-- Promptbook is dark-only. Capacitor's backgroundColor paints the WebView,
+         but the strips behind the status and navigation bars show the window
+         instead, and on a phone in light mode that would be white under the
+         light icons SystemBars sets. So the window is dark too, and so are the
+         bars on Android 14 and older, where they still have their own colour. -->
+    <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:background">@null</item>
+        <item name="android:windowBackground">#0A0C12</item>
+        <item name="android:statusBarColor">#0A0C12</item>
+        <item name="android:navigationBarColor">#0A0C12</item>
+    </style>
+
+
+    <!-- Android 12+ ignores the splash drawable and draws its own splash: the
+         app icon on windowSplashScreenBackground. Left unset, that falls back to
+         a system colour — often white — for a dark app. -->
+    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="android:background">@drawable/splash</item>
+        <item name="windowSplashScreenBackground">#0A0C12</item>
+    </style>
+</resources>

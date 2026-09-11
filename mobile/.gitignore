@@ -1,0 +1,7 @@
+node_modules/
+
+# Generated from app.config.json by scripts/prepare-www.mjs before every sync.
+www/config.js
+
+# Built APKs, copied out of the Gradle tree for sharing.
+dist/
