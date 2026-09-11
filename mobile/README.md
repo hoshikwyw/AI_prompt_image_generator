@@ -25,15 +25,27 @@ Needs JDK 21 and the Android SDK (platform 36), with `ANDROID_HOME` set.
 
 Re-run `npm run sync` whenever `app.config.json` or `capacitor.config.ts` changes.
 
-## Building
+## Building the APK
 
 ```bash
-cd android
-./gradlew assembleDebug     # gradlew.bat on Windows cmd
+npm run build:apk
 ```
 
-The APK lands in `android/app/build/outputs/apk/debug/app-debug.apk`. The first build downloads
-Gradle and takes several minutes; later ones are quicker.
+Syncs, builds with Gradle and copies the result to `dist/Promptbook-<version>-debug.apk`, then
+prints its size and SHA-256. It refuses to run without a `serverUrl`, because that build could only
+ever show the setup page. The first build downloads Gradle and takes several minutes; later ones
+are quicker.
+
+**To install:** upload the APK to Google Drive and open it from the Drive app on the phone. Allow
+Drive to "install unknown apps" when asked, then tap Install. Play Protect may warn about an
+unknown developer; choose "Install anyway".
+
+This is a **debug** build: signed with this computer's debug key, and debuggable over USB. That is
+fine for testing on your own phone, with two consequences:
+
+- An APK built on a different computer has a different signature, so it only installs after the
+  old one is uninstalled.
+- Before sharing it beyond your own phone, switch to a release build signed with your own keystore.
 
 ## Icons and splash
 

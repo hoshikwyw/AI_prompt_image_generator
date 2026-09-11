@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "assets": "node scripts/generate-assets.mjs && capacitor-assets generate --android",
-    "sync": "node scripts/prepare-www.mjs && cap sync android"
+    "sync": "node scripts/prepare-www.mjs && cap sync android",
+    "build:apk": "node scripts/build-apk.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.1",
