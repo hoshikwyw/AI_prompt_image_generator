@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import Select from "./Select";
 import type { Prompt } from "@/lib/prompt";
 
 interface Summary {
@@ -101,18 +102,20 @@ export default function ImportExport({
               {busy ? "Importing…" : armed ? "Click again to replace all" : "Import"}
             </button>
 
-            <select
+            <Select
+              size="sm"
+              label="Import mode"
               value={mode}
-              onChange={(e) => {
-                setMode(e.target.value as "merge" | "replace");
+              options={[
+                { value: "merge", label: "Merge" },
+                { value: "replace", label: "Replace all" },
+              ]}
+              onChange={(next) => {
+                setMode(next);
                 setArmed(false);
               }}
-              aria-label="Import mode"
-              className="field h-[2.125rem] min-h-0 w-auto py-0 text-xs"
-            >
-              <option value="merge">Merge</option>
-              <option value="replace">Replace all</option>
-            </select>
+              className="w-36"
+            />
 
             <input
               ref={fileInput}

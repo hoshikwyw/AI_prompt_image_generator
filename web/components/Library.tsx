@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import ImportExport from "./ImportExport";
 import PromptCard from "./PromptCard";
+import Select from "./Select";
 import {
   CATEGORIES,
   DEFAULT_SORT,
@@ -109,18 +110,13 @@ export default function Library({ prompts: initial, initialFilter, canEdit, cove
           </div>
 
           <div className="flex items-center gap-2.5">
-            <select
+            <Select
+              label="Sort prompts"
               value={filter.sort ?? DEFAULT_SORT}
-              onChange={(e) => set({ sort: e.target.value as SortKey })}
-              aria-label="Sort prompts"
-              className="field flex-1 sm:w-48 sm:flex-none"
-            >
-              {SORTS.map((s) => (
-                <option key={s} value={s}>
-                  {SORT_LABELS[s]}
-                </option>
-              ))}
-            </select>
+              options={SORTS.map((s) => ({ value: s, label: SORT_LABELS[s] }))}
+              onChange={(sort) => set({ sort })}
+              className="flex-1 sm:w-48 sm:flex-none"
+            />
 
             <button
               type="button"

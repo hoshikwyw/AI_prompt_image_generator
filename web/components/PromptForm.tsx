@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Select from "./Select";
 import {
   ACCENTS,
   CATEGORIES,
@@ -10,7 +11,6 @@ import {
   MAX,
   normalizeTag,
   validateDraft,
-  type Category,
   type Prompt,
   type PromptDraft,
 } from "@/lib/prompt";
@@ -179,21 +179,20 @@ export default function PromptForm({ prompt }: Props) {
 
       <div className="grid gap-6 sm:grid-cols-2">
         <div>
-          <label htmlFor="category" className="mb-1.5 block text-sm font-medium">
+          <label
+            id="category-label"
+            htmlFor="category"
+            className="mb-1.5 block text-sm font-medium"
+          >
             Category
           </label>
-          <select
+          <Select
             id="category"
+            labelledBy="category-label"
             value={draft.category}
-            onChange={(e) => set("category", e.target.value as Category)}
-            className={`${field} capitalize`}
-          >
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
+            options={CATEGORIES.map((c) => ({ value: c, label: c[0].toUpperCase() + c.slice(1) }))}
+            onChange={(category) => set("category", category)}
+          />
         </div>
 
         <div>

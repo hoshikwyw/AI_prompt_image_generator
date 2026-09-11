@@ -36,6 +36,10 @@
  */
 @layer base {
   :root {
+    /* Tells the browser the page is dark, so anything it still draws itself —
+       scrollbars, autofill, date pickers — comes out dark to match. */
+    color-scheme: dark;
+
     --background: #0a0c12;
     --surface: #121620;
     --surface-raised: #171c28;
@@ -379,6 +383,125 @@
 
   .modal-wide {
     width: min(64rem, calc(100vw - 1.5rem));
+  }
+
+  /* ---------------------------------------------------------------- select --
+   *
+   * The custom dropdown in components/Select.tsx. A native <select> list is
+   * drawn by the operating system and cannot be styled once open, so this
+   * replaces it everywhere with a listbox that matches the rest of the page.
+   */
+  .select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0 0.7rem 0 0.875rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--foreground);
+    font-size: 0.875rem;
+    text-align: left;
+    cursor: pointer;
+    transition:
+      border-color 150ms ease,
+      background-color 150ms ease;
+  }
+
+  .select-trigger:hover {
+    border-color: var(--border-strong);
+  }
+
+  .select-trigger[data-open="true"] {
+    border-color: var(--accent);
+    background: var(--surface-raised);
+  }
+
+  .select-trigger-sm {
+    min-height: 2.125rem;
+    padding: 0 0.55rem 0 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  .select-chevron {
+    width: 1rem;
+    height: 1rem;
+    flex: none;
+    color: var(--subtle);
+    transition:
+      transform 150ms ease,
+      color 150ms ease;
+  }
+
+  .select-trigger[data-open="true"] .select-chevron {
+    transform: rotate(180deg);
+    color: var(--foreground);
+  }
+
+  .select-menu {
+    position: absolute;
+    z-index: 60;
+    left: 0;
+    top: calc(100% + 0.375rem);
+    min-width: 100%;
+    max-height: 16rem;
+    overflow-y: auto;
+    padding: 0.3rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-strong);
+    background: var(--surface-raised);
+    box-shadow: var(--shadow-lifted);
+    /* The highlighted option is the focus indicator; an outline around the
+       whole panel would just be noise. */
+    outline: none;
+    transform-origin: top;
+    animation: select-menu-in 120ms ease-out;
+  }
+
+  .select-menu-up {
+    top: auto;
+    bottom: calc(100% + 0.375rem);
+    transform-origin: bottom;
+  }
+
+  .select-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    /* 40px rows: comfortably tappable, where the OS list is often ~24px. */
+    min-height: 2.5rem;
+    padding: 0 0.65rem;
+    border-radius: 0.625rem;
+    color: var(--muted);
+    font-size: 0.875rem;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .select-option[data-active="true"] {
+    background: rgb(255 255 255 / 0.06);
+    color: var(--foreground);
+  }
+
+  .select-option[aria-selected="true"] {
+    color: var(--foreground);
+    font-weight: 500;
+  }
+
+  .select-option svg {
+    color: var(--accent);
+  }
+
+  @keyframes select-menu-in {
+    from {
+      opacity: 0;
+      transform: scale(0.97);
+    }
   }
 
   /* A bar pinned to the bottom of a phone screen has to clear the home
