@@ -168,7 +168,10 @@ export default function PromptForm({ prompt }: Props) {
 
       <div>
         <label htmlFor="notes" className="mb-1.5 block text-sm font-medium">
-          Notes <span className="font-normal text-muted">— what it needs, what it gets wrong</span>
+          Notes{" "}
+          <span className="font-normal text-muted">
+            — shown as &ldquo;Before you paste&rdquo;: what it needs, what it gets wrong
+          </span>
         </label>
         <textarea
           id="notes"
@@ -274,7 +277,9 @@ export default function PromptForm({ prompt }: Props) {
       </div>
 
       <fieldset>
-        <legend className="mb-1.5 text-sm font-medium">Accent</legend>
+        <legend className="mb-1.5 text-sm font-medium">
+          Card colour <span className="font-normal text-muted">— the cover until a sample is added</span>
+        </legend>
         <div className="flex flex-wrap gap-2">
           {ACCENTS.map((accent) => (
             <button

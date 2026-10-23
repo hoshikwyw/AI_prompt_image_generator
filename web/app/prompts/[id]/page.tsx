@@ -2,15 +2,22 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import BackLink from "@/components/BackLink";
 import PromptActions from "@/components/PromptActions";
+import PromptText, { hasPlaceholders } from "@/components/PromptText";
 import SampleImages from "@/components/SampleImages";
 import { isAdmin } from "@/lib/admin";
-import { AUDIENCE_LABELS, CATEGORY_LABELS, modelsLabel } from "@/lib/prompt";
+import { AI_TOOL_LABELS, AUDIENCE_LABELS, CATEGORY_LABELS, filterToQuery } from "@/lib/prompt";
 import { getPrompt, listImages } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
 const dateFmt = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" });
 const day = (iso: string) => dateFmt.format(new Date(iso));
+
+/** A library view, as a link — built the same way the library writes its URL. */
+const libraryLink = (filter: Parameters<typeof filterToQuery>[0]) => {
+  const query = filterToQuery(filter);
+  return query ? `/?${query}` : "/";
+};
 
 export async function generateMetadata({ params }: PageProps<"/prompts/[id]">) {
   const { id } = await params;
@@ -24,14 +31,28 @@ export default async function PromptPage({ params }: PageProps<"/prompts/[id]">)
   if (!prompt) notFound();
   const canEdit = await isAdmin();
   const images = (await listImages([prompt.id])).get(prompt.id) ?? [];
+  const placeholders = hasPlaceholders(prompt.body);
+
+  // Who it is for, what it makes and where it works are what a reader checks
+  // before copying, so they lead the page as links to more of the same.
+  const facts: Array<{ label: string; href: string }> = [
+    prompt.audience === "any"
+      ? { label: "For everyone", href: "/" }
+      : {
+          label: `For ${AUDIENCE_LABELS[prompt.audience].toLowerCase()}`,
+          href: libraryLink({ audience: prompt.audience }),
+        },
+    { label: CATEGORY_LABELS[prompt.category], href: libraryLink({ category: prompt.category }) },
+    ...(prompt.models.length
+      ? prompt.models.map((m) => ({ label: AI_TOOL_LABELS[m], href: libraryLink({ model: m }) }))
+      : [{ label: "Any AI", href: "/" }]),
+  ];
 
   const meta: Array<[string, string]> = [
-    ["Category", CATEGORY_LABELS[prompt.category]],
-    ["For", AUDIENCE_LABELS[prompt.audience]],
-    ["Works with", modelsLabel(prompt.models)],
     ["Added", day(prompt.createdAt)],
     ["Updated", day(prompt.updatedAt)],
   ];
+  if (prompt.copies > 0) meta.push(["Copied", `${prompt.copies}×`]);
   if (prompt.source) meta.push(["Source", prompt.source]);
 
   return (
@@ -57,32 +78,59 @@ export default async function PromptPage({ params }: PageProps<"/prompts/[id]">)
           <p className="mt-3 text-base text-muted sm:text-lg">{prompt.summary}</p>
         )}
 
-        {prompt.tags.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-1.5">
-            {prompt.tags.map((tag) => (
-              <Link
-                key={tag}
-                href={`/?tag=${encodeURIComponent(tag)}`}
-                className="rounded-full border border-line bg-surface px-2.5 py-1 text-xs text-muted transition hover:border-line-strong hover:text-foreground"
-              >
-                #{tag}
+        <ul className="mt-5 flex flex-wrap gap-2" aria-label="About this prompt">
+          {facts.map((fact) => (
+            <li key={fact.label}>
+              <Link href={fact.href} className="chip">
+                {fact.label}
               </Link>
-            ))}
-          </div>
-        )}
+            </li>
+          ))}
+        </ul>
       </header>
 
       <section className="card overflow-hidden">
         <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3 sm:px-5">
           <h2 className="text-sm font-medium">Prompt</h2>
-          <PromptActions prompt={prompt} canEdit={canEdit} showCopies />
+          <PromptActions prompt={prompt} canEdit={canEdit} />
         </div>
         {/* Pre-wrap, not a textarea: the exact whitespace is part of the prompt.
             break-words stops a long unbroken string scrolling the page sideways. */}
-        <p className="whitespace-pre-wrap break-words px-4 py-4 font-mono text-[0.8125rem] leading-relaxed sm:px-5 sm:text-sm">
-          {prompt.body}
+        <p className="whitespace-pre-wrap wrap-break-word px-4 py-4 font-mono text-[0.8125rem] leading-relaxed sm:px-5 sm:text-sm">
+          <PromptText text={prompt.body} />
         </p>
+        {placeholders && (
+          <p className="border-t border-line px-4 py-2.5 text-xs text-muted sm:px-5">
+            Change the <mark className="placeholder">[highlighted]</mark> parts to suit you before
+            you send it.
+          </p>
+        )}
       </section>
+
+      {/* Straight under the prompt: "attach your photo first" is the line that
+          decides whether the copy works, so it cannot wait below the samples. */}
+      {prompt.notes && (
+        <aside className="mt-4 flex gap-3 rounded-lg border border-(--accent-border) bg-(--accent-soft) px-4 py-3 sm:px-5">
+          <svg
+            className="mt-0.5 h-4 w-4 shrink-0 text-accent"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            aria-hidden
+          >
+            <circle cx="8" cy="8" r="6.25" />
+            <path d="M8 7.25v3.5M8 5.25v.01" />
+          </svg>
+          <div className="min-w-0">
+            <h2 className="text-sm font-medium">Before you paste</h2>
+            <p className="mt-0.5 whitespace-pre-wrap text-sm leading-relaxed text-muted">
+              {prompt.notes}
+            </p>
+          </div>
+        </aside>
+      )}
 
       <SampleImages
         promptId={prompt.id}
@@ -91,11 +139,18 @@ export default async function PromptPage({ params }: PageProps<"/prompts/[id]">)
         promptBody={prompt.body}
       />
 
-      {prompt.notes && (
-        <section className="mt-8">
-          <h2 className="mb-2 text-sm font-medium">Notes</h2>
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted">{prompt.notes}</p>
-        </section>
+      {prompt.tags.length > 0 && (
+        <div className="mt-8 flex flex-wrap gap-1.5">
+          {prompt.tags.map((tag) => (
+            <Link
+              key={tag}
+              href={libraryLink({ tag })}
+              className="rounded-full border border-line bg-surface px-2.5 py-1 text-xs text-muted transition hover:border-line-strong hover:text-foreground"
+            >
+              #{tag}
+            </Link>
+          ))}
+        </div>
       )}
 
       <dl className="mt-8 grid grid-cols-2 gap-x-4 gap-y-5 border-t border-line pt-6 text-sm sm:grid-cols-4">

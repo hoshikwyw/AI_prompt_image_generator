@@ -21,15 +21,12 @@ interface Summary {
  * needs multipart handling for what is a small text file. Replace is two-step
  * (see `useArmed`) for the same reason delete is: it discards the whole
  * collection.
+ *
+ * Admin-only: the library renders it just for someone who can edit. Export
+ * reads nothing private, but a visitor has no use for a backup file, and the
+ * header is the first thing they see.
  */
-export default function ImportExport({
-  onImported,
-  canImport,
-}: {
-  onImported: (prompts: Prompt[]) => void;
-  /** Export is just a read of public data; import rewrites the collection. */
-  canImport: boolean;
-}) {
+export default function ImportExport({ onImported }: { onImported: (prompts: Prompt[]) => void }) {
   const router = useRouter();
   const fileInput = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState<"merge" | "replace">("merge");
@@ -74,51 +71,43 @@ export default function ImportExport({
       <div className="flex flex-wrap items-center gap-2">
         {/* A real navigation, not a client-side one: the browser has to see the
             response headers for the download to happen. */}
-        <a
-          href="/api/prompts/export"
-          download
-          className="btn btn-sm"
-        >
+        <a href="/api/prompts/export" download className="btn btn-sm">
           Export
         </a>
 
-        {canImport && (
-          <>
-            <button
-              type="button"
-              onClick={pickFile}
-              disabled={busy}
-              className={`btn btn-sm ${
-                armed ? "border-red-600/60 bg-red-500/10 text-red-300" : "text-muted"
-              }`}
-            >
-              {busy ? "Importing…" : armed ? "Click again to replace all" : "Import"}
-            </button>
+        <button
+          type="button"
+          onClick={pickFile}
+          disabled={busy}
+          className={`btn btn-sm ${
+            armed ? "border-red-600/60 bg-red-500/10 text-red-300" : "text-muted"
+          }`}
+        >
+          {busy ? "Importing…" : armed ? "Click again to replace all" : "Import"}
+        </button>
 
-            <Select
-              size="sm"
-              label="Import mode"
-              value={mode}
-              options={[
-                { value: "merge", label: "Merge" },
-                { value: "replace", label: "Replace all" },
-              ]}
-              onChange={(next) => {
-                setMode(next);
-                disarm();
-              }}
-              className="w-36"
-            />
+        <Select
+          size="sm"
+          label="Import mode"
+          value={mode}
+          options={[
+            { value: "merge", label: "Merge" },
+            { value: "replace", label: "Replace all" },
+          ]}
+          onChange={(next) => {
+            setMode(next);
+            disarm();
+          }}
+          className="w-36"
+        />
 
-            <input
-              ref={fileInput}
-              type="file"
-              accept="application/json,.json"
-              onChange={onFile}
-              className="hidden"
-            />
-          </>
-        )}
+        <input
+          ref={fileInput}
+          type="file"
+          accept="application/json,.json"
+          onChange={onFile}
+          className="hidden"
+        />
       </div>
 
       {summary && (

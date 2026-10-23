@@ -144,7 +144,7 @@ export default function Library({
             Pick who it&rsquo;s for and the AI you use, copy a prompt, and paste it in.
           </p>
         </div>
-        <ImportExport onImported={setPrompts} canImport={canEdit} />
+        {canEdit && <ImportExport onImported={setPrompts} />}
       </header>
 
       <div className="mb-6 space-y-3">

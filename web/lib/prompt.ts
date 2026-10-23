@@ -155,9 +155,6 @@ export function readModels(raw: { models?: unknown; targetModel?: unknown }): Ai
   return null;
 }
 
-/** One line for a card or a meta row: "ChatGPT, Gemini", or "Any AI" when untagged. */
-export const modelsLabel = (models: AiTool[]) =>
-  models.length ? models.map((m) => AI_TOOL_LABELS[m]).join(", ") : "Any AI";
 
 /** Tailwind gradients offered for the placeholder tile, in pick order. */
 export const ACCENTS = [

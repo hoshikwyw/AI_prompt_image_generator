@@ -9,8 +9,6 @@ interface Props {
   prompt: Prompt;
   /** Lets a parent list keep its copy in sync after a mutation. */
   onChange?: (patch: Partial<Prompt>) => void;
-  /** The detail page has room for the count; a card does not. */
-  showCopies?: boolean;
   /** Favouriting writes to the shared collection, so it is gated. Copying is not. */
   canEdit?: boolean;
 }
@@ -27,7 +25,6 @@ type CopyState = "idle" | "copied" | "failed";
 export default function PromptActions({
   prompt,
   onChange,
-  showCopies = false,
   canEdit = false,
 }: Props) {
   const [favorite, setFavorite] = useState(prompt.favorite);
@@ -83,10 +80,6 @@ export default function PromptActions({
 
   return (
     <div className="flex items-center gap-2">
-      {showCopies && copies > 0 && (
-        <span className="hidden text-xs text-subtle sm:inline">copied {copies}×</span>
-      )}
-
       <button
         type="button"
         onClick={copy}

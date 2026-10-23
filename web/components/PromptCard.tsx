@@ -1,9 +1,10 @@
 import Link from "next/link";
 import PromptActions from "./PromptActions";
 import {
+  AI_TOOL_LABELS,
   AUDIENCE_LABELS,
   CATEGORY_LABELS,
-  modelsLabel,
+  type AiTool,
   type Prompt,
   type PromptImage,
 } from "@/lib/prompt";
@@ -19,50 +20,66 @@ interface Props {
 
 /** More than this and the tag row wraps to a second line, unbalancing the grid. */
 const TAGS_SHOWN = 3;
+/** Tool names are long ("Stable Diffusion"); past two the footer would truncate. */
+const MODELS_SHOWN = 2;
+
+/** "ChatGPT, Gemini", "Midjourney, Flux +1", or "Any AI" when untagged. */
+function toolsLine(models: AiTool[]): string {
+  if (models.length === 0) return "Any AI";
+  const shown = models.slice(0, MODELS_SHOWN).map((m) => AI_TOOL_LABELS[m]).join(", ");
+  const rest = models.length - MODELS_SHOWN;
+  return rest > 0 ? `${shown} +${rest}` : shown;
+}
 
 /**
- * One prompt in the grid. The body preview is the point — you scan prompts by
- * their opening words far more than by their title — so it keeps the mono type
- * and three clamped lines even when there is a sample image above it.
+ * One prompt in the grid.
+ *
+ * Every card has the same cover — the first sample, or the prompt's accent
+ * gradient until one exists — so a row with one sample does not stretch its
+ * neighbours into tall empty boxes. Who the prompt is for and what it makes sit
+ * on the cover, where they are read first; the body preview below keeps the
+ * mono type, because you scan prompts by their opening words.
  */
 export default function PromptCard({ prompt, onChange, onTagClick, canEdit, image }: Props) {
   const extraTags = prompt.tags.length - TAGS_SHOWN;
+  const href = `/prompts/${prompt.id}`;
 
   return (
-    <article className="card group flex flex-col overflow-hidden transition duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:shadow-[var(--shadow-lifted)]">
-      {image ? (
-        <Link href={`/prompts/${prompt.id}`} className="block overflow-hidden">
-          {/* Plain img: user uploads, on an origin the image optimiser is not
-              configured for. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+    <article className="card group flex flex-col overflow-hidden transition duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:shadow-(--shadow-lifted)">
+      {/* Out of the tab order and hidden from screen readers: the title below is
+          the same link, and one stop per card is enough. */}
+      <Link href={href} tabIndex={-1} aria-hidden className="relative block aspect-video overflow-hidden">
+        {image ? (
+          // Plain img: user uploads, on an origin the image optimiser is not
+          // configured for.
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={image.url}
-            alt={image.caption || `Sample output for ${prompt.title}`}
+            alt=""
             loading="lazy"
-            className="aspect-4/3 w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
           />
-        </Link>
-      ) : (
-        <div className={`h-1 w-full bg-linear-to-r ${prompt.accent}`} aria-hidden />
-      )}
+        ) : (
+          <div className={`cover-placeholder h-full w-full bg-linear-to-br ${prompt.accent}`} />
+        )}
+
+        <div className="pointer-events-none absolute inset-x-3 bottom-3 top-3 flex flex-col items-start justify-between">
+          {prompt.audience !== "any" ? (
+            <span className="cover-chip">For {AUDIENCE_LABELS[prompt.audience].toLowerCase()}</span>
+          ) : (
+            <span />
+          )}
+          <span className="cover-chip">{CATEGORY_LABELS[prompt.category]}</span>
+        </div>
+      </Link>
 
       <div className="flex flex-1 flex-col gap-3 p-4 sm:p-5">
         <div className="min-w-0">
-          <div className="flex items-start justify-between gap-3">
-            <h2 className="min-w-0 text-[0.9375rem] font-medium leading-snug">
-              <Link
-                href={`/prompts/${prompt.id}`}
-                className="transition hover:text-white"
-                // Makes the whole card header comfortable to hit on a phone.
-                title={prompt.title}
-              >
-                {prompt.title}
-              </Link>
-            </h2>
-            <span className="shrink-0 rounded-full border border-line px-2 py-0.5 text-[0.6875rem] text-subtle">
-              {CATEGORY_LABELS[prompt.category]}
-            </span>
-          </div>
+          <h2 className="text-[0.9375rem] font-medium leading-snug">
+            <Link href={href} className="transition hover:text-white" title={prompt.title}>
+              {prompt.title}
+            </Link>
+          </h2>
           {prompt.summary && (
             <p className="mt-1 line-clamp-2 text-sm text-muted">{prompt.summary}</p>
           )}
@@ -92,10 +109,14 @@ export default function PromptCard({ prompt, onChange, onTagClick, canEdit, imag
 
         <div className="mt-auto flex items-center justify-between gap-3 border-t border-line pt-3">
           <span
-            className="min-w-0 truncate text-[0.6875rem] text-subtle"
-            title={`For ${AUDIENCE_LABELS[prompt.audience].toLowerCase()} · ${modelsLabel(prompt.models)}`}
+            className="min-w-0 truncate text-xs text-subtle"
+            title={
+              prompt.models.length
+                ? `Works with ${prompt.models.map((m) => AI_TOOL_LABELS[m]).join(", ")}`
+                : "Works with any AI"
+            }
           >
-            {AUDIENCE_LABELS[prompt.audience]} · {modelsLabel(prompt.models)}
+            {toolsLine(prompt.models)}
           </span>
           <PromptActions prompt={prompt} onChange={onChange} canEdit={canEdit} />
         </div>

@@ -362,6 +362,42 @@
     }
   }
 
+  /* The card cover before a prompt has a sample: its accent gradient, softened
+     by a highlight and a dark fade at the foot so the chips on it stay
+     readable whichever accent is picked. */
+  .cover-placeholder {
+    position: relative;
+  }
+
+  .cover-placeholder::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(120% 90% at 85% 0%, rgb(255 255 255 / 0.22), transparent 55%),
+      linear-gradient(to top, rgb(0 0 0 / 0.35), transparent 60%);
+  }
+
+  /* A [placeholder] in a prompt — the part a reader should change. */
+  mark.placeholder {
+    border-radius: 0.3rem;
+    background: rgb(251 191 36 / 0.14);
+    padding: 0 0.15rem;
+    color: #fcd34d;
+  }
+
+  /* A label laid over a card cover — photo or gradient alike. */
+  .cover-chip {
+    border-radius: 999px;
+    background: rgb(10 12 18 / 0.55);
+    padding: 0.3rem 0.6rem;
+    color: #fff;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    line-height: 1;
+    backdrop-filter: blur(6px);
+  }
+
   .card {
     border-radius: var(--radius-lg);
     border: 1px solid var(--border);
