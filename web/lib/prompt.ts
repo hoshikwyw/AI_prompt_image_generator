@@ -168,6 +168,18 @@ export const ACCENTS = [
   "from-emerald-500 to-lime-700",
 ] as const;
 
+/** What a screen reader announces for each swatch — not its class names. */
+export const ACCENT_NAMES: Record<(typeof ACCENTS)[number], string> = {
+  "from-stone-400 to-stone-600": "Stone",
+  "from-amber-700 to-yellow-900": "Amber",
+  "from-sky-400 to-indigo-600": "Sky",
+  "from-fuchsia-500 to-cyan-500": "Neon",
+  "from-teal-500 to-blue-700": "Ocean",
+  "from-slate-500 to-slate-700": "Slate",
+  "from-rose-500 to-orange-600": "Sunset",
+  "from-emerald-500 to-lime-700": "Forest",
+};
+
 export interface Prompt {
   /** Slug derived from the title. Unique, and the URL key. */
   id: string;

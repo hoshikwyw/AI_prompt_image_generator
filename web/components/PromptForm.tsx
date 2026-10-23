@@ -7,6 +7,7 @@ import Select from "./Select";
 import { ApiError, errorMessage, fetchJson, sendJson } from "@/lib/api";
 import {
   ACCENTS,
+  ACCENT_NAMES,
   AI_TOOLS,
   AI_TOOL_LABELS,
   AUDIENCES,
@@ -309,20 +310,40 @@ export default function PromptForm({ prompt }: Props) {
           Card colour <span className="font-normal text-muted">— the cover until a sample is added</span>
         </legend>
         <div className="flex flex-wrap gap-2">
-          {ACCENTS.map((accent) => (
-            <button
-              key={accent}
-              type="button"
-              onClick={() => set("accent", accent)}
-              aria-label={`Accent ${accent}`}
-              aria-pressed={draft.accent === accent}
-              className={`h-10 w-16 rounded-xl bg-linear-to-r ${accent} ring-offset-2 ring-offset-background transition ${
-                draft.accent === accent
-                  ? "ring-2 ring-foreground/70"
-                  : "opacity-50 hover:opacity-100"
-              }`}
-            />
-          ))}
+          {ACCENTS.map((accent) => {
+            const selected = draft.accent === accent;
+            return (
+              <button
+                key={accent}
+                type="button"
+                onClick={() => set("accent", accent)}
+                aria-label={ACCENT_NAMES[accent]}
+                aria-pressed={selected}
+                title={ACCENT_NAMES[accent]}
+                // Every swatch at full colour — a dimmed one reads as a paler
+                // colour, not an unselected one, especially on a light page.
+                // The choice is the ring and the tick.
+                className={`grid h-10 w-16 place-items-center rounded-xl bg-linear-to-br ${accent} ring-offset-2 ring-offset-background transition hover:scale-105 ${
+                  selected ? "ring-2 ring-foreground" : ""
+                }`}
+              >
+                {selected && (
+                  <svg
+                    className="h-4 w-4 text-white drop-shadow"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d="m3.5 8.5 3 3 6-6.5" />
+                  </svg>
+                )}
+              </button>
+            );
+          })}
         </div>
       </fieldset>
 

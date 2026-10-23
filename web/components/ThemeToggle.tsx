@@ -1,7 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import { THEMES, THEME_COOKIE, type Theme } from "@/lib/theme";
+import { THEMES, THEME_COLORS, THEME_COOKIE, type Theme } from "@/lib/theme";
+
+/**
+ * Rewrites the theme-color meta tags the way generateViewport would have for
+ * this choice, so a phone's address bar follows without a reload.
+ */
+function syncThemeColor(theme: Theme) {
+  document.querySelectorAll('meta[name="theme-color"]').forEach((tag) => tag.remove());
+  const entries: Array<[string, string | null]> =
+    theme === "system"
+      ? [
+          [THEME_COLORS.light, "(prefers-color-scheme: light)"],
+          [THEME_COLORS.dark, "(prefers-color-scheme: dark)"],
+        ]
+      : [[THEME_COLORS[theme], null]];
+  for (const [color, media] of entries) {
+    const tag = document.createElement("meta");
+    tag.name = "theme-color";
+    tag.content = color;
+    if (media) tag.media = media;
+    document.head.appendChild(tag);
+  }
+}
 
 const LABELS: Record<Theme, string> = { system: "System", light: "Light", dark: "Dark" };
 
@@ -26,6 +48,7 @@ export default function ThemeToggle({ initial }: { initial: Theme }) {
       root.dataset.theme = next;
       document.cookie = `${THEME_COOKIE}=${next}; path=/; max-age=${MAX_AGE}; samesite=lax`;
     }
+    syncThemeColor(next);
     setTheme(next);
   }
 

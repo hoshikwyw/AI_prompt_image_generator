@@ -11,6 +11,12 @@ export const THEME_COOKIE = "promptbook-theme";
 export const THEMES = ["system", "light", "dark"] as const;
 export type Theme = (typeof THEMES)[number];
 
+/**
+ * The page background per theme, for the browser's own chrome (the address bar
+ * on a phone). Matches `--background` in globals.css.
+ */
+export const THEME_COLORS = { light: "#f6f7fb", dark: "#0a0c12" } as const;
+
 /** A stored value, or "system" for anything missing or unrecognised. */
 export function readTheme(value: string | undefined): Theme {
   return value === "light" || value === "dark" ? value : "system";

@@ -86,7 +86,7 @@ export default function PromptCard({ prompt, onChange, onTagClick, canEdit, imag
           <h2 className="text-[0.9375rem] font-medium leading-snug">
             <Link
               href={href}
-              className="transition group-hover:text-accent after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:rounded-(--radius-lg) focus-visible:after:outline-2 focus-visible:after:outline-(--accent)"
+              className="transition group-hover:text-accent after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:rounded-(--radius-lg) focus-visible:after:outline-2 focus-visible:after:-outline-offset-2 focus-visible:after:outline-(--accent)"
             >
               {prompt.title}
             </Link>

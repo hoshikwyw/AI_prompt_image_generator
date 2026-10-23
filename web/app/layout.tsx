@@ -8,7 +8,7 @@ import Toaster from "@/components/Toaster";
 import { isAdmin } from "@/lib/admin";
 import { SITE_URL } from "@/lib/site";
 import { activeBackend } from "@/lib/store";
-import { THEME_COOKIE, readTheme } from "@/lib/theme";
+import { THEME_COLORS, THEME_COOKIE, readTheme } from "@/lib/theme";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -26,17 +26,26 @@ export const metadata: Metadata = {
   twitter: { card: "summary" },
 };
 
-export const viewport: Viewport = {
-  // The browser bar follows the system theme. An explicit choice on the site
-  // cannot change it after load, which is a cosmetic mismatch at worst.
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6f7fb" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0c12" },
-  ],
-  // No maximum-scale: pinch-zoom is an accessibility feature, not a bug.
-  width: "device-width",
-  initialScale: 1,
-};
+/**
+ * Per request, because the browser bar should match the theme the page is in:
+ * the chosen one when there is a choice, otherwise whichever the system picks.
+ * ThemeToggle keeps it in step when the choice changes without a reload.
+ */
+export async function generateViewport(): Promise<Viewport> {
+  const theme = readTheme((await cookies()).get(THEME_COOKIE)?.value);
+  return {
+    themeColor:
+      theme === "system"
+        ? [
+            { media: "(prefers-color-scheme: light)", color: THEME_COLORS.light },
+            { media: "(prefers-color-scheme: dark)", color: THEME_COLORS.dark },
+          ]
+        : THEME_COLORS[theme],
+    // No maximum-scale: pinch-zoom is an accessibility feature, not a bug.
+    width: "device-width",
+    initialScale: 1,
+  };
+}
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const admin = await isAdmin();
