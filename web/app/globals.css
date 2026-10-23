@@ -524,6 +524,42 @@
     }
   }
 
+  /* Bottom-right, and on a phone lifted clear of the centred toast, which is
+     nearly full-width there. Fades rather than vanishing, and takes no clicks
+     while hidden. */
+  .back-to-top {
+    position: fixed;
+    right: 1rem;
+    bottom: calc(max(1rem, env(safe-area-inset-bottom)) + 3.75rem);
+    z-index: 50;
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    background: var(--surface-raised);
+    color: var(--foreground);
+    box-shadow: var(--shadow-lifted);
+    cursor: pointer;
+    transition:
+      opacity 180ms ease,
+      transform 180ms ease;
+  }
+
+  .back-to-top[data-shown="false"] {
+    opacity: 0;
+    transform: translateY(0.5rem);
+    pointer-events: none;
+  }
+
+  @media (min-width: 640px) {
+    .back-to-top {
+      right: 1.5rem;
+      bottom: max(1.5rem, env(safe-area-inset-bottom));
+    }
+  }
+
   /* Loading placeholders. A slow pulse rather than a shimmer: calmer, and the
      reduced-motion rule above stops it outright. */
   .skeleton {

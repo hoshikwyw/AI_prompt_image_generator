@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import BackToTop from "./BackToTop";
 import ImportExport from "./ImportExport";
 import PromptCard from "./PromptCard";
 import Select from "./Select";
@@ -269,35 +270,39 @@ export default function Library({
           ))}
         </div>
 
-        <div className="rail">
-          <button
-            type="button"
-            onClick={() => set({ category: "all" })}
-            data-active={(filter.category ?? "all") === "all"}
-            className="chip"
-          >
-            All
-            <span className="text-subtle">{allCount}</span>
-          </button>
-          {CATEGORIES.map((category) => {
-            const count = categoryCounts.get(category) ?? 0;
-            const active = filter.category === category;
-            // The chosen one stays even when empty, so it is visible to undo.
-            if (count === 0 && !active) return null;
-            return (
-              <button
-                key={category}
-                type="button"
-                onClick={() => set({ category })}
-                data-active={active}
-                className="chip"
-              >
-                {CATEGORY_LABELS[category]}
-                <span className="text-subtle">{count}</span>
-              </button>
-            );
-          })}
-        </div>
+        {/* Nothing to narrow when the other filters already match nothing —
+            a lone "All 0" chip is just noise above the empty state. */}
+        {(allCount > 0 || (filter.category ?? "all") !== "all") && (
+          <div className="rail">
+            <button
+              type="button"
+              onClick={() => set({ category: "all" })}
+              data-active={(filter.category ?? "all") === "all"}
+              className="chip"
+            >
+              All
+              <span className="text-subtle">{allCount}</span>
+            </button>
+            {CATEGORIES.map((category) => {
+              const count = categoryCounts.get(category) ?? 0;
+              const active = filter.category === category;
+              // The chosen one stays even when empty, so it is visible to undo.
+              if (count === 0 && !active) return null;
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => set({ category })}
+                  data-active={active}
+                  className="chip"
+                >
+                  {CATEGORY_LABELS[category]}
+                  <span className="text-subtle">{count}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {tags.length > 0 && (
           <div className="rail">
@@ -390,6 +395,8 @@ export default function Library({
           ))}
         </div>
       )}
+
+      <BackToTop />
     </div>
   );
 }
