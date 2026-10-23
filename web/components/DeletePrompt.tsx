@@ -34,7 +34,8 @@ export default function DeletePrompt({ id, title }: { id: string; title: string 
         type="button"
         onClick={onClick}
         disabled={busy}
-        aria-label={armed ? `Confirm deleting ${title}` : `Delete ${title}`}
+        // Starts with the visible text, so "click Delete" works by voice too.
+        aria-label={armed ? `Click again to delete ${title}` : `Delete ${title}`}
         className={`btn ${
           armed
             ? "border-danger-border bg-danger-soft text-danger"

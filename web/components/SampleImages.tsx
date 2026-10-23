@@ -122,7 +122,7 @@ export default function SampleImages({
                     type="button"
                     onClick={() => remove(image)}
                     className="shrink-0 transition hover:text-danger"
-                    aria-label={`Delete ${image.caption || "this sample"}`}
+                    aria-label={`Remove ${image.caption || "sample"}`}
                   >
                     Remove
                   </button>

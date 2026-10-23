@@ -88,7 +88,8 @@ export default function PromptActions({
       <button
         type="button"
         onClick={copy}
-        aria-label={`Copy the ${prompt.title} prompt`}
+        // Follows the visible label, which flips to "Copied" for a moment.
+        aria-label={`${copyState === "copied" ? "Copied" : "Copy"} the ${prompt.title} prompt`}
         className={`btn btn-sm ${
           copyState === "copied" ? "border-success-border bg-success-soft text-success" : ""
         }`}

@@ -352,3 +352,43 @@ have not run against Postgres; `npm run supabase:check` now also checks the new 
 Deploy, then run the migration on the production project and `npm run supabase:check`. Set the
 audience and tools on existing prompts — the migration can only guess tools from old free text,
 and marks every prompt "for everyone".
+
+---
+
+## Phase 5 — Polish, light theme, hardening · 2026-10-23
+
+**Goal:** make the library pleasant to browse and copy from on a phone, in either theme, and
+close the gaps a review and a dependency audit turned up.
+
+### Delivered
+
+| Area | What changed |
+|---|---|
+| Library | Uniform card covers; whole card clickable; category counts that follow the other filters; empty categories hidden; `/` focuses search; back-to-top on long lists |
+| Prompt page | Audience, category and tools up front as filter links; `[placeholders]` highlighted; notes shown as "Before you paste"; share button; "More like this" |
+| Feedback | Copy toast naming where to paste; loading skeletons; 404 and error pages |
+| Themes | Light theme alongside dark: follows the system, a header toggle overrides it, remembered in a cookie so the first paint is right; status colours are tokens; WCAG AA contrast checked on every surface |
+| Android | Window, bars, splash and WebView background follow the phone's mode (`res/values(-night)`); `MainActivity` re-applies them on a live switch; builds need JDK 21, pointed to via `java.home` in `local.properties` |
+| Discovery | Open Graph and Twitter cards per prompt; `sitemap.xml` rendered per request; `robots.txt` |
+| Security | Next 16.3.3 → 16.4.2 (critical advisories), sharp → 0.35.5 (librsvg CVE); uploads must start with JPEG/PNG/WebP/AVIF bytes before sharp sees them, so an SVG renamed `.png` never reaches librsvg |
+| Accessibility | axe-core (WCAG 2.2 AA + best practice) clean on every page in both themes; accessible names start with the visible label; visible card focus; swatches named |
+
+### Decisions
+
+- **Theme in a cookie, not local storage.** The server sets `data-theme` on `<html>`, so there is
+  no flash and no inline script. "System" is the absence of a choice, so the CSS media query
+  decides.
+- **Deploy before migrating** (see Phase 4) also shaped the Supabase store: it falls back to the
+  old columns on Postgres `42703` until the migration runs.
+- **A loading screen costs the 404 status** for unknown prompts: the response streams, so it is a
+  200 with `noindex`, which Next adds and which is what search engines need.
+
+### Verification
+
+Lint, TypeScript and build clean on Next 16.4.2; `npm audit` reports 0 vulnerabilities in `web/`
+and `mobile/`. Scripted browser runs (headless Edge over CDP) cover create, edit, favourite,
+two-step delete, the remembered filter cookie, the theme toggle and the copy toast. The APK
+builds (`npm run build:apk`) and contains both the day and night resources.
+
+**Not verified:** the Android changes on a real device, and every Supabase path against a live
+project.
