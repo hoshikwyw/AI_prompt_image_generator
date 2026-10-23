@@ -42,5 +42,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# local data (prompt collection, plus dormant job metadata)
+# local data (prompt collection and sample images)
 .data/

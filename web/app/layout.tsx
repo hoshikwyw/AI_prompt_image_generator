@@ -86,7 +86,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 </>
               )}
             </p>
-            <p>Image generation is parked until an API key is available.</p>
+            <p>Copy a prompt, paste it into your favourite AI.</p>
           </div>
         </footer>
       </body>

@@ -16,4 +16,4 @@ npm run supabase:migrate                # move it
 ```
 
 `.env.example` documents every variable. Supabase turns the local file into a shared collection;
-`ADMIN_PASSPHRASE` decides who may edit it. The image-generation keys are dormant.
+`ADMIN_PASSPHRASE` decides who may edit it.

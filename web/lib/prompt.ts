@@ -1,10 +1,8 @@
 /**
  * The unit this app collects: one reusable AI prompt.
  *
- * Until an image-generation key exists, the app is a library rather than a
- * generator — you write, tag, search and copy prompts, and run them elsewhere.
- * The shape below is deliberately the future `prompts` table's columns, so
- * Phase 2 (Postgres) is a data move rather than a rewrite.
+ * The app never runs a prompt itself — you find one, copy it, and paste it into
+ * whichever AI you use. The shape below mirrors the `prompts` table's columns.
  *
  * Prompts are written as *transformation* instructions, not scene descriptions.
  * "Restyle the person in this photo as X, keeping their facial features" works;
@@ -47,7 +45,7 @@ export interface Prompt {
   notes: string;
   category: Category;
   tags: string[];
-  /** Free text, e.g. "flux.2-klein", "gemini-3.1-flash-lite-image", "any". */
+  /** Free text, e.g. "midjourney", "gemini", "any". */
   targetModel: string;
   /** Where it came from — URL or credit. Empty when it is your own. */
   source: string;
