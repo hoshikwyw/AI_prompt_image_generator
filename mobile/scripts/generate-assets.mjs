@@ -14,7 +14,12 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
-import { BACKGROUND, gradientSvg, iconSvg } from "../../web/scripts/icon-design.mjs";
+import {
+  BACKGROUND,
+  LIGHT_BACKGROUND,
+  gradientSvg,
+  iconSvg,
+} from "../../web/scripts/icon-design.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
 const render = (svg) => sharp(Buffer.from(svg)).png().toBuffer();
@@ -26,11 +31,11 @@ async function write(relative, data) {
   console.log(`  ${relative.padEnd(28)} ${(data.length / 1024).toFixed(1).padStart(7)} KB`);
 }
 
-/** A dark screen with the rounded icon in the middle. */
-async function splash() {
+/** The page background with the rounded icon in the middle. */
+async function splash(background) {
   const SIZE = 2732; // the size @capacitor/assets expects; it crops per device
   const logo = await render(iconSvg({ size: 640 }));
-  return sharp({ create: { width: SIZE, height: SIZE, channels: 4, background: BACKGROUND } })
+  return sharp({ create: { width: SIZE, height: SIZE, channels: 4, background } })
     .composite([{ input: logo, gravity: "center" }])
     .png()
     .toBuffer();
@@ -54,10 +59,11 @@ await write(
 );
 await write("assets/icon-background.png", await render(gradientSvg({ size: 1024 })));
 
-// Splash: the app is dark-only, so light and dark variants are the same.
-const splashImage = await splash();
-await write("assets/splash.png", splashImage);
-await write("assets/splash-dark.png", splashImage);
+// Splash, Android 11 and older: one per mode, like the site. capacitor-assets
+// turns splash-dark.png into the drawable-night variants. (Android 12+ draws
+// its own splash on windowSplashScreenBackground, set in styles.xml.)
+await write("assets/splash.png", await splash(LIGHT_BACKGROUND));
+await write("assets/splash-dark.png", await splash(BACKGROUND));
 
 // For the local fallback pages in www/, so they show the mascot too.
 await write("www/icon.svg", Buffer.from(iconSvg()));

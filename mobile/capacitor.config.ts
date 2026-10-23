@@ -19,9 +19,6 @@ const { serverUrl = "" } = JSON.parse(
   readFileSync(join(process.cwd(), "app.config.json"), "utf8"),
 ) as { serverUrl?: string };
 
-/** The site's own background, so no white flash shows while it loads. */
-const BACKGROUND = "#0a0c12";
-
 const config: CapacitorConfig = {
   // Reverse-domain id Android uses to tell apps apart. It cannot change once
   // the app is installed without uninstalling first, so it is fixed here.
@@ -42,14 +39,15 @@ const config: CapacitorConfig = {
     },
   }),
 
-  android: {
-    backgroundColor: BACKGROUND,
-  },
+  // No android.backgroundColor: it takes one colour, and the site is light or
+  // dark with the phone. MainActivity paints the WebView from
+  // res/values(-night)/theme_colors.xml instead, so there is no flash of the
+  // wrong colour while a page loads in either mode.
 
   plugins: {
     SystemBars: {
-      // Light status-bar icons, for a dark app.
-      style: "DARK",
+      // Icons follow the phone's light/dark mode, as the site does.
+      style: "DEFAULT",
     },
   },
 };

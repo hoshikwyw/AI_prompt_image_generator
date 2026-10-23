@@ -64,9 +64,13 @@ Only needed when the design changes; the output under `android/` is committed.
 | **Back button** | Walks the site's history before leaving the app (`MainActivity.java`). Capacitor does not handle it, and Android's default would exit from any page. |
 | **Offline page** | `www/error.html`, served from inside the app, so it shows with no connection. It retries by itself when the connection returns. |
 | **Setup page** | `www/index.html`, shown only by a build with no `serverUrl`. |
-| **Dark system bars** | `styles.xml` darkens the window, status bar, navigation bar and the Android 12+ splash, which would otherwise show white on a light-mode phone. |
+| **Light and dark** | The window, system bars, splash and WebView background follow the phone's light/dark mode, like the site. Colours live in `res/values/theme_colors.xml` and `res/values-night/`; `MainActivity` re-applies them when the phone switches mode with the app open, since the app is not restarted for that. |
 
 ## Known limits
+
+- **The bars follow the phone, not the site's theme button.** Picking Dark on the site while the
+  phone is in light mode darkens the page but leaves the status bar light. The page stays fully
+  readable; only the strip at the top differs.
 
 - **Export does nothing in the app.** A WebView doesn't handle file downloads unless the app adds
   its own download handling. Use the site in a browser to export.

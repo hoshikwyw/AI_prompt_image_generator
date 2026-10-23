@@ -17,6 +17,9 @@ export const GRADIENT = ["#7c8cff", "#f472b6"];
 /** The page background, for anything that sits behind the mark (splash screens). */
 export const BACKGROUND = "#0a0c12";
 
+/** The light theme's page background — `--background` in globals.css. */
+export const LIGHT_BACKGROUND = "#f6f7fb";
+
 /** Soft plum rather than black, so the face reads gentle instead of stark. */
 const INK = "#2b2540";
 

@@ -9,26 +9,34 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
-    <!-- Promptbook is dark-only. Capacitor's backgroundColor paints the WebView,
-         but the strips behind the status and navigation bars show the window
-         instead, and on a phone in light mode that would be white under the
-         light icons SystemBars sets. So the window is dark too, and so are the
-         bars on Android 14 and older, where they still have their own colour. -->
+    <!-- Follows the phone's light/dark setting, like the site does.
+         @color/app_background and @bool/light_system_bars come from
+         values/theme_colors.xml, or values-night/ in dark mode.
+
+         The strips behind the status and navigation bars show the window, not
+         the WebView, so the window takes the page colour too — and so do the
+         bars on Android 14 and older, where they still have their own colour.
+         The icons start out matching here, before any plugin has run.
+
+         The app is not restarted when the phone switches mode (uiMode is in the
+         manifest's configChanges), so MainActivity re-applies these at runtime. -->
     <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
-        <item name="android:windowBackground">#0A0C12</item>
-        <item name="android:statusBarColor">#0A0C12</item>
-        <item name="android:navigationBarColor">#0A0C12</item>
+        <item name="android:windowBackground">@color/app_background</item>
+        <item name="android:statusBarColor">@color/app_background</item>
+        <item name="android:navigationBarColor">@color/app_background</item>
+        <item name="android:windowLightStatusBar">@bool/light_system_bars</item>
     </style>
 
 
     <!-- Android 12+ ignores the splash drawable and draws its own splash: the
          app icon on windowSplashScreenBackground. Left unset, that falls back to
-         a system colour — often white — for a dark app. -->
+         a system colour. Older versions show @drawable/splash, which has a
+         drawable-night variant. -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>
-        <item name="windowSplashScreenBackground">#0A0C12</item>
+        <item name="windowSplashScreenBackground">@color/app_background</item>
     </style>
 </resources>
