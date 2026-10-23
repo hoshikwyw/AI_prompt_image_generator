@@ -378,6 +378,55 @@
       linear-gradient(to top, rgb(0 0 0 / 0.35), transparent 60%);
   }
 
+  /* Where `showToast` messages appear: bottom centre, clear of a phone's home
+     indicator, and never in the way of a click when empty. */
+  .toast-region {
+    pointer-events: none;
+    position: fixed;
+    inset-inline: 0;
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    z-index: 60;
+    display: flex;
+    justify-content: center;
+    padding-inline: 1rem;
+  }
+
+  .toast {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    max-width: 28rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    background: var(--surface-raised);
+    padding: 0.6rem 1rem;
+    color: var(--foreground);
+    font-size: 0.875rem;
+    box-shadow: var(--shadow-lifted);
+    animation: toast-in 180ms ease-out;
+  }
+
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+  }
+
+  /* Loading placeholders. A slow pulse rather than a shimmer: calmer, and the
+     reduced-motion rule above stops it outright. */
+  .skeleton {
+    border-radius: 0.5rem;
+    background: var(--surface-raised);
+    animation: skeleton-pulse 1.6s ease-in-out infinite;
+  }
+
+  @keyframes skeleton-pulse {
+    50% {
+      opacity: 0.5;
+    }
+  }
+
   /* A [placeholder] in a prompt — the part a reader should change. */
   mark.placeholder {
     border-radius: 0.3rem;

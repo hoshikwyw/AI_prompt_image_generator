@@ -2,17 +2,34 @@ import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Toaster from "@/components/Toaster";
 import { isAdmin } from "@/lib/admin";
 import { activeBackend } from "@/lib/store";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
+const description =
+  "Ready-to-copy AI image prompts for ChatGPT, Gemini, Midjourney and more — for women, men and couples.";
+
+/**
+ * Link previews need absolute URLs, and a local sample image's URL is a path.
+ * SITE_URL when set; on Vercel, the production domain it provides; otherwise
+ * the dev server.
+ */
+const siteUrl =
+  process.env.SITE_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : "http://localhost:3000");
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   // Pages set just their own name; the template adds the site's.
   title: { default: "Promptbook — AI image prompts", template: "%s — Promptbook" },
-  description:
-    "Ready-to-copy AI image prompts for ChatGPT, Gemini, Midjourney and more — for women, men and couples.",
+  description,
+  openGraph: { siteName: "Promptbook", type: "website", description },
+  twitter: { card: "summary" },
 };
 
 export const viewport: Viewport = {
@@ -79,18 +96,24 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
 
         <footer className="mt-8 border-t border-line">
           <div className="shell flex flex-col gap-1.5 py-6 text-xs leading-relaxed text-subtle sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-            <p>
-              {activeBackend() === "supabase" ? (
-                <>Prompts are stored in Supabase.</>
-              ) : (
-                <>
-                  Stored locally in <code className="font-mono">.data/collection.json</code>.
-                </>
-              )}
-            </p>
             <p>Copy a prompt, paste it into your favourite AI.</p>
+            {/* Where the data lives matters to whoever maintains it, not to a
+                visitor — and a read-only deploy says so here. */}
+            {admin && (
+              <p>
+                {activeBackend() === "supabase" ? (
+                  <>Prompts are stored in Supabase.</>
+                ) : (
+                  <>
+                    Stored locally in <code className="font-mono">.data/collection.json</code>.
+                  </>
+                )}
+              </p>
+            )}
           </div>
         </footer>
+
+        <Toaster />
       </body>
     </html>
   );

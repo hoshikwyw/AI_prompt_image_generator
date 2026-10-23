@@ -125,6 +125,13 @@ export default function Library({
   const patchPrompt = (id: string, patch: Partial<Prompt>) =>
     setPrompts((list) => list.map((p) => (p.id === id ? { ...p, ...patch } : p)));
 
+  // Only an admin can star a prompt, so to a visitor the stars are the
+  // editor's picks — and a filter for picks that do not exist is a dead end.
+  // It stays while active, so a link that turned it on can turn it off.
+  const starLabel = canEdit ? "Favourites" : "Editor's picks";
+  const showStarFilter =
+    canEdit || Boolean(filter.favoritesOnly) || prompts.some((p) => p.favorite);
+
   const isFiltered =
     Boolean(filter.q) ||
     (filter.category ?? "all") !== "all" ||
@@ -165,7 +172,7 @@ export default function Library({
               type="search"
               value={filter.q ?? ""}
               onChange={(e) => set({ q: e.target.value })}
-              placeholder="Search prompts…"
+              placeholder="Search saree, anime, logo…"
               aria-label="Search prompts"
               className="field pl-10"
             />
@@ -188,22 +195,24 @@ export default function Library({
               className="min-w-0 flex-1 sm:w-48 sm:flex-none"
             />
 
-            <button
-              type="button"
-              onClick={() => set({ favoritesOnly: !filter.favoritesOnly })}
-              aria-pressed={Boolean(filter.favoritesOnly)}
-              title="Show favourites only"
-              className={`btn btn-icon shrink-0 ${
-                filter.favoritesOnly
-                  ? "border-amber-600/60 bg-amber-500/10 text-amber-300"
-                  : "text-muted"
-              }`}
-            >
-              <span aria-hidden className="text-base leading-none">
-                {filter.favoritesOnly ? "★" : "☆"}
-              </span>
-              <span className="sr-only">Favourites only</span>
-            </button>
+            {showStarFilter && (
+              <button
+                type="button"
+                onClick={() => set({ favoritesOnly: !filter.favoritesOnly })}
+                aria-pressed={Boolean(filter.favoritesOnly)}
+                title={`Show ${starLabel.toLowerCase()} only`}
+                className={`btn btn-icon shrink-0 ${
+                  filter.favoritesOnly
+                    ? "border-amber-600/60 bg-amber-500/10 text-amber-300"
+                    : "text-muted"
+                }`}
+              >
+                <span aria-hidden className="text-base leading-none">
+                  {filter.favoritesOnly ? "★" : "☆"}
+                </span>
+                <span className="sr-only">{starLabel} only</span>
+              </button>
+            )}
           </div>
         </div>
 

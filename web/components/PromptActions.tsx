@@ -3,7 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import { fetchJson, sendJson } from "@/lib/api";
 import { copyText } from "@/lib/copy";
-import type { Prompt } from "@/lib/prompt";
+import { AI_TOOL_LABELS, type AiTool, type Prompt } from "@/lib/prompt";
+import { showToast } from "@/lib/toast";
+
+/** Where to go next, named after the tools the prompt is tagged with. */
+export function pasteHint(models: AiTool[]): string {
+  if (models.length === 0) return "Copied — paste it into your AI.";
+  const names = models.slice(0, 2).map((m) => AI_TOOL_LABELS[m]);
+  return `Copied — paste it into ${names.join(" or ")}.`;
+}
 
 interface Props {
   prompt: Prompt;
@@ -59,6 +67,7 @@ export default function PromptActions({
     if (await copyText(prompt.body)) {
       setCopyState("copied");
       window.setTimeout(() => setCopyState("idle"), 1600);
+      showToast(pasteHint(prompt.models));
       countCopy();
       return;
     }

@@ -22,7 +22,23 @@ const libraryLink = (filter: Parameters<typeof filterToQuery>[0]) => {
 export async function generateMetadata({ params }: PageProps<"/prompts/[id]">) {
   const { id } = await params;
   const prompt = await getPrompt(id);
-  return { title: prompt ? prompt.title : "Prompt not found" };
+  if (!prompt) return { title: "Prompt not found" };
+
+  // What a shared link unfurls into: the title, the one-line summary, and the
+  // first sample when there is one — the picture is what gets the tap.
+  const cover = (await listImages([prompt.id])).get(prompt.id)?.[0];
+  const description = prompt.summary || prompt.body.slice(0, 160);
+  return {
+    title: prompt.title,
+    description,
+    openGraph: {
+      title: prompt.title,
+      description,
+      type: "article",
+      ...(cover && { images: [{ url: cover.url, alt: cover.caption || prompt.title }] }),
+    },
+    twitter: { card: cover ? "summary_large_image" : "summary" },
+  };
 }
 
 export default async function PromptPage({ params }: PageProps<"/prompts/[id]">) {
