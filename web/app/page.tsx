@@ -13,12 +13,10 @@ export default async function LibraryPage({ searchParams }: PageProps<"/">) {
 
   // A plain visit opens on what this visitor picked last time. A link that says
   // who or which AI it is for wins, so a shared view shows what was shared.
+  const savedPrefs = readPrefs((await cookies()).get(PREFS_COOKIE)?.value);
   let initialFilter = parseFilter(get);
   if (!("for" in params) && !("ai" in params)) {
-    initialFilter = {
-      ...initialFilter,
-      ...readPrefs((await cookies()).get(PREFS_COOKIE)?.value),
-    };
+    initialFilter = { ...initialFilter, ...savedPrefs };
   }
 
   // The whole collection goes to the client, which filters it there. The parsed
@@ -35,6 +33,7 @@ export default async function LibraryPage({ searchParams }: PageProps<"/">) {
     <Library
       prompts={prompts}
       initialFilter={initialFilter}
+      savedPrefs={savedPrefs}
       canEdit={await isAdmin()}
       covers={covers}
     />

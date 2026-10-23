@@ -313,11 +313,21 @@ the tool they have open.
   migration's backfill, `validateDraft` (so old export files import cleanly) and
   `upgradeStoredPrompt` (so an old local collection reads cleanly and is rewritten on its next
   change).
-- **`target_model` is kept, unused, for one deploy.** Dropping it in the same migration would break
-  the previous deploy between running the SQL and shipping the code.
+- **Deploy first, migrate second.** Migrating first leaves the old code serving rows with category
+  names it does not know, and its PATCH resets them to `other` on save. So the new Supabase store
+  falls back to the old columns on Postgres `42703` (undefined column) and reads cleanly before
+  the migration; only writes wait for it.
+- **The backfill clears what it maps.** Each row's `target_model` is reset to `any` as it is
+  mapped, so re-running the migration cannot hand back a tool an admin has since removed.
+  `target_model` itself stays for rollback; drop it once that is no longer a concern.
+- **Aimed-at-you first.** With a "for" or AI filter, prompts tagged for that choice sort ahead of
+  the ones that merely suit anyone, and the chosen sort orders each group. Otherwise a woman
+  filtering for women met a living-room render before any prompt written for her.
 - **A cookie, not local storage, for the remembered choice.** The library is server-rendered;
   with a cookie it arrives already filtered instead of flashing the whole collection and then
-  narrowing. Only clicks write it — opening someone's shared link never overwrites your choice.
+  narrowing. Only clicks write it, and a click saves onto the stored choice rather than the
+  current view — so opening someone's shared link, or picking an AI while on it, never replaces
+  your own audience with theirs.
 
 ### Verification
 
@@ -339,4 +349,6 @@ have not run against Postgres; `npm run supabase:check` now also checks the new 
 
 ### Next
 
-Run the migration on the production project, then deploy. Once live, drop `target_model`.
+Deploy, then run the migration on the production project and `npm run supabase:check`. Set the
+audience and tools on existing prompts — the migration can only guess tools from old free text,
+and marks every prompt "for everyone".

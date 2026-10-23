@@ -32,6 +32,12 @@ interface Props {
    * filtered — or, on a plain visit, from the visitor's remembered choice.
    */
   initialFilter: PromptFilter;
+  /**
+   * What the visitor's cookie held when the page loaded. Not the same as the
+   * view's audience and model when a link set those — and a link's values must
+   * not end up saved as the visitor's own choice.
+   */
+  savedPrefs: Pick<PromptFilter, "audience" | "model">;
   /** False for a visitor: the write controls are not rendered at all. */
   canEdit: boolean;
   /** Prompt id -> its first sample image, for the card tiles. */
@@ -73,9 +79,16 @@ function writePrefs({ audience, model }: Prefs) {
  * per keystroke feels broken. `filterPrompts` is the same function the API
  * uses, so the two views of the collection cannot disagree.
  */
-export default function Library({ prompts: initial, initialFilter, canEdit, covers }: Props) {
+export default function Library({
+  prompts: initial,
+  initialFilter,
+  savedPrefs: initialPrefs,
+  canEdit,
+  covers,
+}: Props) {
   const [prompts, setPrompts] = useState(initial);
   const [filter, setFilter] = useState<PromptFilter>(initialFilter);
+  const [savedPrefs, setSavedPrefs] = useState<Prefs>(initialPrefs);
   const [allTagsShown, setAllTagsShown] = useState(false);
 
   const visible = useMemo(() => filterPrompts(prompts, filter), [prompts, filter]);
@@ -91,15 +104,21 @@ export default function Library({ prompts: initial, initialFilter, canEdit, cove
 
   const set = (patch: Partial<PromptFilter>) => setFilter((f) => ({ ...f, ...patch }));
 
-  /** Only a choice the visitor makes is remembered — never one a link made. */
+  /**
+   * Only a choice the visitor makes is remembered — never one a link made. So
+   * the patch lands on what was saved, not on the view: picking an AI while on
+   * someone's `?for=couple` link keeps your own saved audience.
+   */
   const choose = (patch: Prefs) => {
-    const next = { ...filter, ...patch };
-    writePrefs(next);
-    setFilter(next);
+    const prefs = { ...savedPrefs, ...patch };
+    writePrefs(prefs);
+    setSavedPrefs(prefs);
+    setFilter((f) => ({ ...f, ...patch }));
   };
 
   const clearFilters = () => {
     writePrefs({});
+    setSavedPrefs({});
     setFilter({ category: "all", sort: filter.sort });
   };
 

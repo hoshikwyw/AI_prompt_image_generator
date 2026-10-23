@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { SUPABASE_BUCKET, publicImageUrl, supabaseRead, supabaseWrite } from "../supabase";
 import {
   filterPrompts,
+  legacyModels,
   toAudience,
   toCategory,
   toModels,
@@ -40,11 +41,22 @@ const IMAGE_COLUMNS =
 /**
  * Every column, in one place, so a select cannot quietly miss a field.
  *
- * `target_model` is left out on purpose: `models` replaced it, and the column
- * only survives so the previous deploy keeps working until this one is live.
+ * `target_model` is left out on purpose: `models` replaced it.
  */
 const COLUMNS =
   "id, title, summary, body, notes, category, tags, audience, models, source, accent, favorite, copies, created_at, updated_at";
+
+/**
+ * The columns from before the audience/models migration. This code is meant to
+ * be deployed *before* that migration runs, so the old code is never left
+ * serving rows it does not understand — which means reads have to work against
+ * the old schema for a while. Writes need the new columns and fail until then.
+ */
+const LEGACY_COLUMNS =
+  "id, title, summary, body, notes, category, tags, target_model, source, accent, favorite, copies, created_at, updated_at";
+
+/** Postgres undefined_column: the audience/models migration has not run yet. */
+const UNDEFINED_COLUMN = "42703";
 
 interface Row {
   id: string;
@@ -54,8 +66,11 @@ interface Row {
   notes: string;
   category: string;
   tags: string[] | null;
-  audience: string;
-  models: string[] | null;
+  /** Absent when read through LEGACY_COLUMNS. */
+  audience?: string;
+  models?: string[] | null;
+  /** Only present when read through LEGACY_COLUMNS. */
+  target_model?: string;
   source: string;
   accent: string;
   favorite: boolean;
@@ -70,12 +85,13 @@ const toPrompt = (row: Row): Prompt => ({
   summary: row.summary,
   body: row.body,
   notes: row.notes,
-  // Coerced rather than cast: the check constraints guarantee these, but a
-  // project that has not run the latest migration should degrade, not crash.
+  // Coerced rather than cast: the check constraints guarantee these once the
+  // latest migration has run, but before it a row still has the old category
+  // names and no audience, and must read cleanly anyway.
   category: toCategory(row.category),
   tags: row.tags ?? [],
   audience: toAudience(row.audience),
-  models: toModels(row.models),
+  models: row.models !== undefined ? toModels(row.models) : legacyModels(row.target_model),
   source: row.source,
   accent: row.accent,
   favorite: row.favorite,
@@ -156,6 +172,18 @@ function fail(action: string, error: { message: string }): never {
   throw new Error(`Supabase ${action} failed: ${error.message}`);
 }
 
+type ReadResult = { data: unknown; error: { code?: string; message: string } | null };
+
+/**
+ * Runs a read with the current columns, and again with the legacy ones when the
+ * audience/models migration has not run yet. See LEGACY_COLUMNS.
+ */
+async function readPrompts(run: (columns: string) => PromiseLike<ReadResult>): Promise<ReadResult> {
+  const result = await run(COLUMNS);
+  if (result.error?.code !== UNDEFINED_COLUMN) return result;
+  return run(LEGACY_COLUMNS);
+}
+
 async function takenIds(): Promise<Set<string>> {
   const { data, error } = await supabaseWrite().from(TABLE).select("id").limit(MAX_IMPORT);
   if (error) fail("id lookup", error);
@@ -174,24 +202,24 @@ export const supabaseStore: StoreBackend = {
    * becomes a tsvector column and this becomes a query.
    */
   async listPrompts(filter?: PromptFilter): Promise<Prompt[]> {
-    const { data, error } = await supabaseRead()
-      .from(TABLE)
-      .select(COLUMNS)
-      .order("updated_at", { ascending: false })
-      .limit(MAX_IMPORT);
+    const { data, error } = await readPrompts((columns) =>
+      supabaseRead()
+        .from(TABLE)
+        .select(columns)
+        .order("updated_at", { ascending: false })
+        .limit(MAX_IMPORT),
+    );
     if (error) fail("list", error);
-    return filterPrompts((data as unknown as Row[]).map(toPrompt), filter);
+    return filterPrompts(((data ?? []) as Row[]).map(toPrompt), filter);
   },
 
   async getPrompt(id: string): Promise<Prompt | null> {
     if (!/^[a-z0-9-]+$/.test(id)) return null;
-    const { data, error } = await supabaseRead()
-      .from(TABLE)
-      .select(COLUMNS)
-      .eq("id", id)
-      .maybeSingle();
+    const { data, error } = await readPrompts((columns) =>
+      supabaseRead().from(TABLE).select(columns).eq("id", id).maybeSingle(),
+    );
     if (error) fail("get", error);
-    return data ? toPrompt(data as unknown as Row) : null;
+    return data ? toPrompt(data as Row) : null;
   },
 
   async createPrompt(draft: PromptDraft): Promise<Prompt> {

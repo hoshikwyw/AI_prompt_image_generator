@@ -14,10 +14,15 @@ Either path works; the dashboard is the shorter one.
 **Dashboard** — SQL Editor → New query → paste each file in `migrations/`, oldest first → Run.
 Each is safe to run again if you are unsure whether it took.
 
-**Upgrading an existing project?** Run only `20261023000000_audience_and_models.sql`, then deploy
-the new code. It maps the old categories onto the new ones and turns each free-text
-`target_model` into the `models` list. `target_model` itself is left in place so the old deploy
-can still read the table in between; drop it once the new version is live.
+**Upgrading an existing project?** Deploy the new code first, then run only
+`20261023000000_audience_and_models.sql`. In between, the site reads the old columns and keeps
+working, but creating and editing prompts fails until the migration has run. Do not do it the
+other way round: the old code does not know the new category names, and any prompt it saves in
+the meantime has its category reset to "other".
+
+The migration maps the old categories onto the new ones and turns each free-text `target_model`
+into the `models` list. `target_model` is left in place so a rollback still has a readable table;
+drop it once you are sure you will not need one.
 
 **CLI** — needs your database password:
 

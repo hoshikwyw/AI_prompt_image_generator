@@ -92,16 +92,33 @@ const legacyModels = (text) => {
   return match ? [match[1]] : [];
 };
 
+// The lists the migration's check constraints allow, mirroring lib/prompt.ts.
+// A value outside them would fail its whole upsert batch, so it is coerced the
+// way the app coerces it on read.
+const CATEGORIES = [
+  "portrait", "fashion", "anime", "art", "3d", "fantasy", "landscape",
+  "architecture", "product", "logo", "animals", "food", "other",
+];
+const AUDIENCES = ["any", "female", "male", "couple"];
+const AI_TOOLS = [
+  "chatgpt", "gemini", "midjourney", "flux", "stable-diffusion",
+  "leonardo", "ideogram", "grok", "copilot",
+];
+
+const toCategory = (value) =>
+  CATEGORIES.includes(value) ? value : (LEGACY_CATEGORIES[value] ?? "other");
+const toModels = (value) => AI_TOOLS.filter((tool) => value.includes(tool));
+
 const toRow = (p) => ({
   id: p.id,
   title: p.title,
   summary: p.summary ?? "",
   body: p.body,
   notes: p.notes ?? "",
-  category: LEGACY_CATEGORIES[p.category] ?? p.category ?? "other",
+  category: toCategory(p.category),
   tags: p.tags ?? [],
-  audience: p.audience ?? "any",
-  models: Array.isArray(p.models) ? p.models : legacyModels(p.targetModel),
+  audience: AUDIENCES.includes(p.audience) ? p.audience : "any",
+  models: Array.isArray(p.models) ? toModels(p.models) : legacyModels(p.targetModel),
   source: p.source ?? "",
   accent: p.accent ?? "",
   favorite: Boolean(p.favorite),

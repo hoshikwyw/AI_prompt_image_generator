@@ -303,7 +303,12 @@ export function validateDraft(input: unknown): ValidationResult {
 
   const category = toCategory(raw.category);
   // A row from before `models` existed carries a free-text targetModel instead.
-  const models = Array.isArray(raw.models) ? toModels(raw.models) : legacyModels(raw.targetModel);
+  // Anything else in `models` is a mistake, and quietly reading it as "any AI"
+  // would wipe a prompt's tools on a bad PATCH.
+  let models: AiTool[] = [];
+  if (Array.isArray(raw.models)) models = toModels(raw.models);
+  else if (raw.models === undefined) models = legacyModels(raw.targetModel);
+  else errors.models = "AI tools must be a list.";
 
   const tags = Array.from(
     new Set(
@@ -402,7 +407,17 @@ export function filterPrompts(prompts: Prompt[], filter: PromptFilter = {}): Pro
     title: (a, b) => a.title.localeCompare(b.title),
     "most-copied": (a, b) => b.copies - a.copies || b.updatedAt.localeCompare(a.updatedAt),
   };
-  return out.sort(by[filter.sort ?? DEFAULT_SORT]);
+  const sort = by[filter.sort ?? DEFAULT_SORT];
+
+  // A filter for women or for Gemini keeps prompts that suit everyone or any
+  // tool, but they are the fallback, not the point: the prompts aimed at the
+  // choice come first, and the chosen sort orders each group.
+  const audience = filter.audience && filter.audience !== "all" ? filter.audience : null;
+  const model = filter.model ?? null;
+  const rank = (p: Prompt) =>
+    (audience && p.audience !== audience ? 2 : 0) + (model && !p.models.includes(model) ? 1 : 0);
+
+  return out.sort((a, b) => rank(a) - rank(b) || sort(a, b));
 }
 
 /** Tag -> count, most used first. Drives the filter chips. */

@@ -99,9 +99,10 @@ prompts and refuse every write, and the footer will say so.
 Set `ADMIN_PASSPHRASE` too. On a shared collection, writes are refused outright without one, so
 you would not be able to edit anything through the deployed site.
 
-**Upgrading a deployment from before audiences and AI tools?** Run
-`supabase/migrations/20261023000000_audience_and_models.sql` in the Supabase SQL Editor *before*
-deploying — the new code reads columns that migration adds. See
+**Upgrading a deployment from before audiences and AI tools?** Deploy the new code *first*, then
+run `supabase/migrations/20261023000000_audience_and_models.sql` in the Supabase SQL Editor. The
+new code reads the old columns until the migration has run (editing fails until then); the
+other way round, the old code resets the category of any prompt it saves. See
 [supabase/README.md](supabase/README.md#apply-it).
 
 Three things to know about the free tier specifically:

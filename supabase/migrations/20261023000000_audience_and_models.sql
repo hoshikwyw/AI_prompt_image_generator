@@ -9,6 +9,12 @@
 -- more than once: columns are added IF NOT EXISTS, constraints are dropped
 -- before being recreated, and the backfills only touch rows still in the old
 -- shape.
+--
+-- On a live project, DEPLOY THE NEW CODE FIRST, then run this. The new code
+-- reads the old columns until this has run, so the site stays up in between.
+-- The other way round, the old code is still serving while categories change
+-- under it: it does not know the new names, and any edit it saves resets the
+-- prompt's category to 'other'.
 
 -- ---------------------------------------------------------------- columns --
 
@@ -19,6 +25,10 @@ alter table public.prompts add column if not exists models   text[] not null def
 
 -- Free-text model names onto the fixed list. Kept in step with
 -- LEGACY_MODEL_PATTERNS in web/lib/prompt.ts.
+--
+-- `target_model` is reset to 'any' as each row is mapped, so a re-run cannot
+-- map it again: without that, a prompt an admin later set to "Any AI" (an
+-- empty list) would get its old tool back from the stale text.
 update public.prompts
    set models = case
      when target_model ~* 'gemini|nano.?banana|imagen'  then array['gemini']
@@ -31,8 +41,9 @@ update public.prompts
      when target_model ~* 'grok'                        then array['grok']
      when target_model ~* 'copilot|bing|designer'       then array['copilot']
      else '{}'::text[]
-   end
- where models = '{}';
+   end,
+       target_model = 'any'
+ where models = '{}' and target_model <> 'any';
 
 -- The old constraint has to go before rows can take the new category names.
 alter table public.prompts drop constraint if exists prompts_category_known;
@@ -75,9 +86,9 @@ create index if not exists prompts_audience_idx on public.prompts (audience);
 
 -- -------------------------------------------------------------- legacy --
 
--- No longer read or written by the app. Left in place so the previous deploy
--- can still read the table between running this migration and deploying the
--- new code; drop it once the new version is live:
+-- Mapped into `models` above and no longer read by the app once this has run.
+-- Left in place so rolling back to the previous code keeps a readable table;
+-- drop it once you are sure you will not:
 --
 --   alter table public.prompts drop column target_model;
 comment on column public.prompts.target_model is
