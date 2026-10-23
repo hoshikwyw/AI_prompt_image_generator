@@ -61,6 +61,17 @@ for (const table of ["prompts", "prompt_images"]) {
   else ok(`table "${table}" readable, ${count} row${count === 1 ? "" : "s"}`);
 }
 
+// --- the audience/models migration has been applied -------------------------
+{
+  const { error } = await anon.from("prompts").select("audience, models", { head: true });
+  if (error) {
+    fail(
+      `prompts has no audience/models columns (${error.message}) — ` +
+        "apply supabase/migrations/20261023000000_audience_and_models.sql.",
+    );
+  } else ok("audience and models columns present");
+}
+
 // --- RLS really is read-only for anon --------------------------------------
 const probeId = `rls-probe-${Date.now()}`;
 const { error: writeError } = await anon

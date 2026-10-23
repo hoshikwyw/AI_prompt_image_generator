@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import PromptActions from "@/components/PromptActions";
 import SampleImages from "@/components/SampleImages";
 import { isAdmin } from "@/lib/admin";
+import { AUDIENCE_LABELS, CATEGORY_LABELS, modelsLabel } from "@/lib/prompt";
 import { getPrompt, listImages } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -24,8 +25,9 @@ export default async function PromptPage({ params }: PageProps<"/prompts/[id]">)
   const images = (await listImages([prompt.id])).get(prompt.id) ?? [];
 
   const meta: Array<[string, string]> = [
-    ["Category", prompt.category],
-    ["Model", prompt.targetModel],
+    ["Category", CATEGORY_LABELS[prompt.category]],
+    ["For", AUDIENCE_LABELS[prompt.audience]],
+    ["Works with", modelsLabel(prompt.models)],
     ["Added", day(prompt.createdAt)],
     ["Updated", day(prompt.updatedAt)],
   ];
@@ -101,7 +103,7 @@ export default async function PromptPage({ params }: PageProps<"/prompts/[id]">)
         {meta.map(([label, value]) => (
           <div key={label} className="min-w-0">
             <dt className="text-xs text-subtle">{label}</dt>
-            <dd className="mt-1 truncate capitalize" title={value}>
+            <dd className="mt-1 truncate" title={value}>
               {value}
             </dd>
           </div>

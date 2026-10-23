@@ -4,22 +4,148 @@
  * The app never runs a prompt itself — you find one, copy it, and paste it into
  * whichever AI you use. The shape below mirrors the `prompts` table's columns.
  *
- * Prompts are written as *transformation* instructions, not scene descriptions.
- * "Restyle the person in this photo as X, keeping their facial features" works;
- * "a portrait of a man in style X" makes the model ignore the upload and invent
- * a stranger. Keep that rule when adding new prompts.
+ * A prompt can be for any kind of image. Each one says what it makes
+ * (`category`), who it suits (`audience`) and which AI tools it is known to
+ * work in (`models`), so a visitor can narrow the library to prompts that fit
+ * them and the tool they have open.
  */
 
+/**
+ * Mirrored by the `prompts_category_known` check constraint in the migrations —
+ * adding one here means adding it there too.
+ */
 export const CATEGORIES = [
-  "artistic",
-  "photographic",
-  "stylised",
-  "character",
-  "scene",
+  "portrait",
+  "fashion",
+  "anime",
+  "art",
+  "3d",
+  "fantasy",
+  "landscape",
+  "architecture",
+  "product",
+  "logo",
+  "animals",
+  "food",
   "other",
 ] as const;
 
 export type Category = (typeof CATEGORIES)[number];
+
+export const CATEGORY_LABELS: Record<Category, string> = {
+  portrait: "Portrait",
+  fashion: "Fashion",
+  anime: "Anime",
+  art: "Art",
+  "3d": "3D",
+  fantasy: "Fantasy",
+  landscape: "Landscape",
+  architecture: "Architecture",
+  product: "Product",
+  logo: "Logo",
+  animals: "Animals",
+  food: "Food",
+  other: "Other",
+};
+
+/**
+ * Categories from when the collection only held portrait restyles. Old exports
+ * and old rows map onto the current set rather than all landing in "other".
+ */
+const LEGACY_CATEGORIES: Record<string, Category> = {
+  artistic: "art",
+  photographic: "portrait",
+  stylised: "art",
+  character: "portrait",
+  scene: "landscape",
+};
+
+export function toCategory(value: unknown): Category {
+  if (CATEGORIES.includes(value as Category)) return value as Category;
+  return LEGACY_CATEGORIES[String(value)] ?? "other";
+}
+
+/**
+ * Who a prompt suits. "any" is a prompt that works for anyone — a landscape, or
+ * a portrait restyle that does not assume a gender — so a visitor filtering for
+ * women still sees it. Mirrored by `prompts_audience_known`.
+ */
+export const AUDIENCES = ["any", "female", "male", "couple"] as const;
+export type Audience = (typeof AUDIENCES)[number];
+
+export const AUDIENCE_LABELS: Record<Audience, string> = {
+  any: "Everyone",
+  female: "Women",
+  male: "Men",
+  couple: "Couples",
+};
+
+export function toAudience(value: unknown): Audience {
+  return AUDIENCES.includes(value as Audience) ? (value as Audience) : "any";
+}
+
+/**
+ * The AI tools a prompt can be tagged with. The app never calls any of them; the
+ * list only answers "will this work where I am about to paste it". Mirrored by
+ * `prompts_models_known`.
+ */
+export const AI_TOOLS = [
+  "chatgpt",
+  "gemini",
+  "midjourney",
+  "flux",
+  "stable-diffusion",
+  "leonardo",
+  "ideogram",
+  "grok",
+  "copilot",
+] as const;
+export type AiTool = (typeof AI_TOOLS)[number];
+
+export const AI_TOOL_LABELS: Record<AiTool, string> = {
+  chatgpt: "ChatGPT",
+  gemini: "Gemini",
+  midjourney: "Midjourney",
+  flux: "Flux",
+  "stable-diffusion": "Stable Diffusion",
+  leonardo: "Leonardo",
+  ideogram: "Ideogram",
+  grok: "Grok",
+  copilot: "Copilot",
+};
+
+/** Known ids only, deduplicated, in `AI_TOOLS` order so equal lists compare equal. */
+export function toModels(value: unknown): AiTool[] {
+  if (!Array.isArray(value)) return [];
+  const wanted = new Set(value.map(String));
+  return AI_TOOLS.filter((tool) => wanted.has(tool));
+}
+
+/**
+ * Prompts used to carry a free-text `targetModel` ("flux.2-klein", "any").
+ * Kept in step with the backfill in the migration that replaced it.
+ */
+const LEGACY_MODEL_PATTERNS: Array<[RegExp, AiTool]> = [
+  [/gemini|nano.?banana|imagen/i, "gemini"],
+  [/chatgpt|gpt|dall/i, "chatgpt"],
+  [/midjourney/i, "midjourney"],
+  [/flux/i, "flux"],
+  [/stable.?diffusion|sdxl/i, "stable-diffusion"],
+  [/leonardo/i, "leonardo"],
+  [/ideogram/i, "ideogram"],
+  [/grok/i, "grok"],
+  [/copilot|bing|designer/i, "copilot"],
+];
+
+export function legacyModels(targetModel: unknown): AiTool[] {
+  const text = typeof targetModel === "string" ? targetModel : "";
+  const match = LEGACY_MODEL_PATTERNS.find(([pattern]) => pattern.test(text));
+  return match ? [match[1]] : [];
+}
+
+/** One line for a card or a meta row: "ChatGPT, Gemini", or "Any AI" when untagged. */
+export const modelsLabel = (models: AiTool[]) =>
+  models.length ? models.map((m) => AI_TOOL_LABELS[m]).join(", ") : "Any AI";
 
 /** Tailwind gradients offered for the placeholder tile, in pick order. */
 export const ACCENTS = [
@@ -45,8 +171,10 @@ export interface Prompt {
   notes: string;
   category: Category;
   tags: string[];
-  /** Free text, e.g. "midjourney", "gemini", "any". */
-  targetModel: string;
+  /** Who it suits. */
+  audience: Audience;
+  /** AI tools it is known to work in. Empty means it is not tied to one. */
+  models: AiTool[];
   /** Where it came from — URL or credit. Empty when it is your own. */
   source: string;
   accent: string;
@@ -104,7 +232,8 @@ export interface PromptDraft {
   notes: string;
   category: Category;
   tags: string[];
-  targetModel: string;
+  audience: Audience;
+  models: AiTool[];
   source: string;
   accent: string;
 }
@@ -114,9 +243,10 @@ export const EMPTY_DRAFT: PromptDraft = {
   summary: "",
   body: "",
   notes: "",
-  category: "artistic",
+  category: "portrait",
   tags: [],
-  targetModel: "any",
+  audience: "any",
+  models: [],
   source: "",
   accent: ACCENTS[0],
 };
@@ -126,7 +256,6 @@ export const MAX = {
   summary: 140,
   body: 4000,
   notes: 2000,
-  targetModel: 60,
   source: 300,
   tags: 12,
   tag: 24,
@@ -172,9 +301,9 @@ export function validateDraft(input: unknown): ValidationResult {
   if (!body) errors.body = "Prompt text is required.";
   else if (body.length > MAX.body) errors.body = `Prompt text is over ${MAX.body} characters.`;
 
-  const category = CATEGORIES.includes(raw.category as Category)
-    ? (raw.category as Category)
-    : "other";
+  const category = toCategory(raw.category);
+  // A row from before `models` existed carries a free-text targetModel instead.
+  const models = Array.isArray(raw.models) ? toModels(raw.models) : legacyModels(raw.targetModel);
 
   const tags = Array.from(
     new Set(
@@ -201,7 +330,8 @@ export function validateDraft(input: unknown): ValidationResult {
       notes: str(raw.notes).slice(0, MAX.notes),
       category,
       tags,
-      targetModel: str(raw.targetModel).slice(0, MAX.targetModel) || "any",
+      audience: toAudience(raw.audience),
+      models,
       source,
       accent,
     },
@@ -240,7 +370,7 @@ export function filterPrompts(prompts: Prompt[], filter: PromptFilter = {}): Pro
       p.summary.toLowerCase().includes(q) ||
       p.body.toLowerCase().includes(q) ||
       p.notes.toLowerCase().includes(q) ||
-      p.targetModel.toLowerCase().includes(q) ||
+      p.models.some((m) => AI_TOOL_LABELS[m].toLowerCase().includes(q)) ||
       p.tags.some((t) => t.includes(q))
     );
   });

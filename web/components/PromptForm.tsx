@@ -6,8 +6,14 @@ import { useState } from "react";
 import Select from "./Select";
 import {
   ACCENTS,
+  AI_TOOLS,
+  AI_TOOL_LABELS,
+  AUDIENCES,
+  AUDIENCE_LABELS,
   CATEGORIES,
+  CATEGORY_LABELS,
   EMPTY_DRAFT,
+  toModels,
   MAX,
   normalizeTag,
   validateDraft,
@@ -46,7 +52,8 @@ export default function PromptForm({ prompt }: Props) {
           notes: prompt.notes,
           category: prompt.category,
           tags: prompt.tags,
-          targetModel: prompt.targetModel,
+          audience: prompt.audience,
+          models: prompt.models,
           source: prompt.source,
           accent: prompt.accent,
         }
@@ -60,6 +67,18 @@ export default function PromptForm({ prompt }: Props) {
 
   const set = <K extends keyof PromptDraft>(key: K, value: PromptDraft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
+
+  // Re-normalised through toModels so the list keeps AI_TOOLS order whichever
+  // chip was clicked first.
+  const toggleModel = (tool: (typeof AI_TOOLS)[number]) =>
+    set(
+      "models",
+      toModels(
+        draft.models.includes(tool)
+          ? draft.models.filter((m) => m !== tool)
+          : [...draft.models, tool],
+      ),
+    );
 
   const parsedTags = Array.from(
     new Set(tagsText.split(",").map(normalizeTag).filter(Boolean)),
@@ -190,25 +209,49 @@ export default function PromptForm({ prompt }: Props) {
             id="category"
             labelledBy="category-label"
             value={draft.category}
-            options={CATEGORIES.map((c) => ({ value: c, label: c[0].toUpperCase() + c.slice(1) }))}
+            options={CATEGORIES.map((c) => ({ value: c, label: CATEGORY_LABELS[c] }))}
             onChange={(category) => set("category", category)}
           />
         </div>
 
         <div>
-          <label htmlFor="targetModel" className="mb-1.5 block text-sm font-medium">
-            Model
+          <label
+            id="audience-label"
+            htmlFor="audience"
+            className="mb-1.5 block text-sm font-medium"
+          >
+            For
           </label>
-          <input
-            id="targetModel"
-            value={draft.targetModel}
-            onChange={(e) => set("targetModel", e.target.value)}
-            maxLength={MAX.targetModel}
-            placeholder="any"
-            className={`${field} font-mono`}
+          <Select
+            id="audience"
+            labelledBy="audience-label"
+            value={draft.audience}
+            options={AUDIENCES.map((a) => ({ value: a, label: AUDIENCE_LABELS[a] }))}
+            onChange={(audience) => set("audience", audience)}
           />
         </div>
       </div>
+
+      <fieldset>
+        <legend className="mb-1.5 text-sm font-medium">
+          Works with{" "}
+          <span className="font-normal text-muted">— leave all off if it works anywhere</span>
+        </legend>
+        <div className="flex flex-wrap gap-2">
+          {AI_TOOLS.map((tool) => (
+            <button
+              key={tool}
+              type="button"
+              onClick={() => toggleModel(tool)}
+              aria-pressed={draft.models.includes(tool)}
+              data-active={draft.models.includes(tool)}
+              className="chip"
+            >
+              {AI_TOOL_LABELS[tool]}
+            </button>
+          ))}
+        </div>
+      </fieldset>
 
       <div>
         <label htmlFor="tags" className="mb-1.5 block text-sm font-medium">

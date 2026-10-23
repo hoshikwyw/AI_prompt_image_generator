@@ -1,5 +1,9 @@
 import {
+  legacyModels,
   slugify,
+  toAudience,
+  toCategory,
+  toModels,
   validateDraft,
   type Prompt,
   type PromptDraft,
@@ -45,6 +49,23 @@ export function uniqueId(title: string, taken: Set<string>): string {
 }
 
 export const now = () => new Date().toISOString();
+
+/**
+ * Brings a stored prompt up to the current shape. A collection saved before
+ * `audience` and `models` existed is upgraded as it is read, and lands on disk
+ * in the new shape the next time anything in it changes.
+ */
+export function upgradeStoredPrompt(stored: Prompt): Prompt {
+  const raw = { ...stored } as unknown as Record<string, unknown>;
+  const models = Array.isArray(raw.models) ? toModels(raw.models) : legacyModels(raw.targetModel);
+  delete raw.targetModel;
+  return {
+    ...(raw as unknown as Prompt),
+    category: toCategory(raw.category),
+    audience: toAudience(raw.audience),
+    models,
+  };
+}
 
 const isIso = (v: unknown): v is string => typeof v === "string" && !Number.isNaN(Date.parse(v));
 

@@ -43,7 +43,8 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/prompts/[i
     "notes",
     "category",
     "tags",
-    "targetModel",
+    "audience",
+    "models",
     "source",
     "accent",
   ];

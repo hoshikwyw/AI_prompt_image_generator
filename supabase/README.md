@@ -3,15 +3,21 @@
 The backend: prompts, sample images, and the storage bucket the images live in.
 
 ```
-migrations/20260908000000_init.sql   tables, RLS, copy counter, storage bucket
+migrations/20260908000000_init.sql                  tables, RLS, copy counter, storage bucket
+migrations/20261023000000_audience_and_models.sql   wider categories, audience, AI tools
 ```
 
 ## Apply it
 
 Either path works; the dashboard is the shorter one.
 
-**Dashboard** — SQL Editor → New query → paste `migrations/20260908000000_init.sql` → Run.
-It is safe to run again if you are unsure whether it took.
+**Dashboard** — SQL Editor → New query → paste each file in `migrations/`, oldest first → Run.
+Each is safe to run again if you are unsure whether it took.
+
+**Upgrading an existing project?** Run only `20261023000000_audience_and_models.sql`, then deploy
+the new code. It maps the old categories onto the new ones and turns each free-text
+`target_model` into the `models` list. `target_model` itself is left in place so the old deploy
+can still read the table in between; drop it once the new version is live.
 
 **CLI** — needs your database password:
 
@@ -36,8 +42,8 @@ Then check the whole thing end to end:
 cd web && npm run supabase:check
 ```
 
-It reads both tables with the anon key, proves an anonymous INSERT is *rejected*, and confirms the
-bucket and the copy-counter function exist. It never prints a key.
+It reads both tables with the anon key, checks the audience and models columns exist, proves an
+anonymous INSERT is *rejected*, and confirms the bucket and the copy-counter function exist. It never prints a key.
 
 If you already have a local collection, carry it across:
 

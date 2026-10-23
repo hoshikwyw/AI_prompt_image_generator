@@ -14,6 +14,7 @@ import {
   now,
   readImportItem,
   uniqueId,
+  upgradeStoredPrompt,
   type ImportSummary,
   type NewImage,
   type StoreBackend,
@@ -85,7 +86,7 @@ async function readCollection(): Promise<Collection> {
     if (Array.isArray(parsed?.prompts)) {
       return {
         version: parsed.version ?? VERSION,
-        prompts: parsed.prompts,
+        prompts: parsed.prompts.map(upgradeStoredPrompt),
         // Collections written before images existed simply have none.
         images: Array.isArray(parsed.images) ? parsed.images : [],
       };

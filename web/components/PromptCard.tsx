@@ -1,6 +1,12 @@
 import Link from "next/link";
 import PromptActions from "./PromptActions";
-import type { Prompt, PromptImage } from "@/lib/prompt";
+import {
+  AUDIENCE_LABELS,
+  CATEGORY_LABELS,
+  modelsLabel,
+  type Prompt,
+  type PromptImage,
+} from "@/lib/prompt";
 
 interface Props {
   prompt: Prompt;
@@ -53,8 +59,8 @@ export default function PromptCard({ prompt, onChange, onTagClick, canEdit, imag
                 {prompt.title}
               </Link>
             </h2>
-            <span className="shrink-0 rounded-full border border-line px-2 py-0.5 text-[0.6875rem] capitalize text-subtle">
-              {prompt.category}
+            <span className="shrink-0 rounded-full border border-line px-2 py-0.5 text-[0.6875rem] text-subtle">
+              {CATEGORY_LABELS[prompt.category]}
             </span>
           </div>
           {prompt.summary && (
@@ -86,10 +92,10 @@ export default function PromptCard({ prompt, onChange, onTagClick, canEdit, imag
 
         <div className="mt-auto flex items-center justify-between gap-3 border-t border-line pt-3">
           <span
-            className="min-w-0 truncate font-mono text-[0.6875rem] text-subtle"
-            title={prompt.targetModel}
+            className="min-w-0 truncate text-[0.6875rem] text-subtle"
+            title={`For ${AUDIENCE_LABELS[prompt.audience].toLowerCase()} · ${modelsLabel(prompt.models)}`}
           >
-            {prompt.targetModel}
+            {AUDIENCE_LABELS[prompt.audience]} · {modelsLabel(prompt.models)}
           </span>
           <PromptActions prompt={prompt} onChange={onChange} canEdit={canEdit} />
         </div>

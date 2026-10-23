@@ -7,6 +7,7 @@ import PromptCard from "./PromptCard";
 import Select from "./Select";
 import {
   CATEGORIES,
+  CATEGORY_LABELS,
   DEFAULT_SORT,
   SORTS,
   filterPrompts,
@@ -152,9 +153,9 @@ export default function Library({ prompts: initial, initialFilter, canEdit, cove
               type="button"
               onClick={() => set({ category })}
               data-active={filter.category === category}
-              className="chip capitalize"
+              className="chip"
             >
-              {category}
+              {CATEGORY_LABELS[category]}
             </button>
           ))}
         </div>

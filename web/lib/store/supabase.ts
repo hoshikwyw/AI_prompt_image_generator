@@ -2,7 +2,9 @@ import { randomUUID } from "node:crypto";
 import { SUPABASE_BUCKET, publicImageUrl, supabaseRead, supabaseWrite } from "../supabase";
 import {
   filterPrompts,
-  type Category,
+  toAudience,
+  toCategory,
+  toModels,
   type Prompt,
   type PromptDraft,
   type PromptFilter,
@@ -35,9 +37,14 @@ const IMAGE_TABLE = "prompt_images";
 const IMAGE_COLUMNS =
   "id, prompt_id, storage_path, caption, width, height, bytes, mime, position, created_at";
 
-/** Every column, in one place, so a select cannot quietly miss a field. */
+/**
+ * Every column, in one place, so a select cannot quietly miss a field.
+ *
+ * `target_model` is left out on purpose: `models` replaced it, and the column
+ * only survives so the previous deploy keeps working until this one is live.
+ */
 const COLUMNS =
-  "id, title, summary, body, notes, category, tags, target_model, source, accent, favorite, copies, created_at, updated_at";
+  "id, title, summary, body, notes, category, tags, audience, models, source, accent, favorite, copies, created_at, updated_at";
 
 interface Row {
   id: string;
@@ -47,7 +54,8 @@ interface Row {
   notes: string;
   category: string;
   tags: string[] | null;
-  target_model: string;
+  audience: string;
+  models: string[] | null;
   source: string;
   accent: string;
   favorite: boolean;
@@ -62,9 +70,12 @@ const toPrompt = (row: Row): Prompt => ({
   summary: row.summary,
   body: row.body,
   notes: row.notes,
-  category: row.category as Category,
+  // Coerced rather than cast: the check constraints guarantee these, but a
+  // project that has not run the latest migration should degrade, not crash.
+  category: toCategory(row.category),
   tags: row.tags ?? [],
-  targetModel: row.target_model,
+  audience: toAudience(row.audience),
+  models: toModels(row.models),
   source: row.source,
   accent: row.accent,
   favorite: row.favorite,
@@ -83,7 +94,8 @@ const toRow = (prompt: Prompt): Row => ({
   notes: prompt.notes,
   category: prompt.category,
   tags: prompt.tags,
-  target_model: prompt.targetModel,
+  audience: prompt.audience,
+  models: prompt.models,
   source: prompt.source,
   accent: prompt.accent,
   favorite: prompt.favorite,
@@ -129,7 +141,8 @@ function draftColumns(patch: Partial<PromptDraft> & { favorite?: boolean }) {
   if (patch.notes !== undefined) row.notes = patch.notes;
   if (patch.category !== undefined) row.category = patch.category;
   if (patch.tags !== undefined) row.tags = patch.tags;
-  if (patch.targetModel !== undefined) row.target_model = patch.targetModel;
+  if (patch.audience !== undefined) row.audience = patch.audience;
+  if (patch.models !== undefined) row.models = patch.models;
   if (patch.source !== undefined) row.source = patch.source;
   if (patch.accent !== undefined) row.accent = patch.accent;
   if (patch.favorite !== undefined) row.favorite = patch.favorite;

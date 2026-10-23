@@ -65,15 +65,43 @@ try {
 const prompts = Array.isArray(collection.prompts) ? collection.prompts : [];
 const images = Array.isArray(collection.images) ? collection.images : [];
 
+// A local file saved before audience and models existed still has the old
+// categories and a free-text targetModel. These mirror LEGACY_CATEGORIES and
+// LEGACY_MODEL_PATTERNS in lib/prompt.ts, so old files migrate the same way the
+// app reads them.
+const LEGACY_CATEGORIES = {
+  artistic: "art",
+  photographic: "portrait",
+  stylised: "art",
+  character: "portrait",
+  scene: "landscape",
+};
+const LEGACY_MODEL_PATTERNS = [
+  [/gemini|nano.?banana|imagen/i, "gemini"],
+  [/chatgpt|gpt|dall/i, "chatgpt"],
+  [/midjourney/i, "midjourney"],
+  [/flux/i, "flux"],
+  [/stable.?diffusion|sdxl/i, "stable-diffusion"],
+  [/leonardo/i, "leonardo"],
+  [/ideogram/i, "ideogram"],
+  [/grok/i, "grok"],
+  [/copilot|bing|designer/i, "copilot"],
+];
+const legacyModels = (text) => {
+  const match = LEGACY_MODEL_PATTERNS.find(([pattern]) => pattern.test(text ?? ""));
+  return match ? [match[1]] : [];
+};
+
 const toRow = (p) => ({
   id: p.id,
   title: p.title,
   summary: p.summary ?? "",
   body: p.body,
   notes: p.notes ?? "",
-  category: p.category ?? "other",
+  category: LEGACY_CATEGORIES[p.category] ?? p.category ?? "other",
   tags: p.tags ?? [],
-  target_model: p.targetModel ?? "any",
+  audience: p.audience ?? "any",
+  models: Array.isArray(p.models) ? p.models : legacyModels(p.targetModel),
   source: p.source ?? "",
   accent: p.accent ?? "",
   favorite: Boolean(p.favorite),

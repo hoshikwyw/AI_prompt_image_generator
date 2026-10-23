@@ -1,0 +1,84 @@
+-- Promptbook — prompts for any kind of image, for a chosen audience and AI.
+--
+-- 1. Categories widen from portrait restyles to every kind of image.
+-- 2. `audience` says who a prompt suits: any, female, male or couple.
+-- 3. `models` lists the AI tools a prompt is known to work in, replacing the
+--    free-text `target_model`. An empty list means it is not tied to one tool.
+--
+-- Mirrors CATEGORIES, AUDIENCES and AI_TOOLS in web/lib/prompt.ts. Safe to run
+-- more than once: columns are added IF NOT EXISTS, constraints are dropped
+-- before being recreated, and the backfills only touch rows still in the old
+-- shape.
+
+-- ---------------------------------------------------------------- columns --
+
+alter table public.prompts add column if not exists audience text   not null default 'any';
+alter table public.prompts add column if not exists models   text[] not null default '{}';
+
+-- ------------------------------------------------------------- backfills --
+
+-- Free-text model names onto the fixed list. Kept in step with
+-- LEGACY_MODEL_PATTERNS in web/lib/prompt.ts.
+update public.prompts
+   set models = case
+     when target_model ~* 'gemini|nano.?banana|imagen'  then array['gemini']
+     when target_model ~* 'chatgpt|gpt|dall'            then array['chatgpt']
+     when target_model ~* 'midjourney'                  then array['midjourney']
+     when target_model ~* 'flux'                        then array['flux']
+     when target_model ~* 'stable.?diffusion|sdxl'      then array['stable-diffusion']
+     when target_model ~* 'leonardo'                    then array['leonardo']
+     when target_model ~* 'ideogram'                    then array['ideogram']
+     when target_model ~* 'grok'                        then array['grok']
+     when target_model ~* 'copilot|bing|designer'       then array['copilot']
+     else '{}'::text[]
+   end
+ where models = '{}';
+
+-- The old constraint has to go before rows can take the new category names.
+alter table public.prompts drop constraint if exists prompts_category_known;
+
+-- Kept in step with LEGACY_CATEGORIES in web/lib/prompt.ts.
+update public.prompts
+   set category = case category
+     when 'artistic'     then 'art'
+     when 'photographic' then 'portrait'
+     when 'stylised'     then 'art'
+     when 'character'    then 'portrait'
+     when 'scene'        then 'landscape'
+     else category
+   end
+ where category in ('artistic', 'photographic', 'stylised', 'character', 'scene');
+
+-- ----------------------------------------------------------- constraints --
+
+alter table public.prompts add constraint prompts_category_known check (
+  category in (
+    'portrait', 'fashion', 'anime', 'art', '3d', 'fantasy', 'landscape',
+    'architecture', 'product', 'logo', 'animals', 'food', 'other'
+  )
+);
+
+alter table public.prompts drop constraint if exists prompts_audience_known;
+alter table public.prompts add constraint prompts_audience_known check (
+  audience in ('any', 'female', 'male', 'couple')
+);
+
+alter table public.prompts drop constraint if exists prompts_models_known;
+alter table public.prompts add constraint prompts_models_known check (
+  models <@ array[
+    'chatgpt', 'gemini', 'midjourney', 'flux', 'stable-diffusion',
+    'leonardo', 'ideogram', 'grok', 'copilot'
+  ]::text[]
+);
+
+create index if not exists prompts_audience_idx on public.prompts (audience);
+
+-- -------------------------------------------------------------- legacy --
+
+-- No longer read or written by the app. Left in place so the previous deploy
+-- can still read the table between running this migration and deploying the
+-- new code; drop it once the new version is live:
+--
+--   alter table public.prompts drop column target_model;
+comment on column public.prompts.target_model is
+  'Deprecated: replaced by models. Unused by the app; safe to drop.';
