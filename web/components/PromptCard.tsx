@@ -1,5 +1,6 @@
 import Link from "next/link";
 import PromptActions from "./PromptActions";
+import PromptText from "./PromptText";
 import {
   AI_TOOL_LABELS,
   AUDIENCE_LABELS,
@@ -12,6 +13,7 @@ import {
 interface Props {
   prompt: Prompt;
   onChange?: (patch: Partial<Prompt>) => void;
+  /** Filters in place in the library; without it, a tag links to the library. */
   onTagClick?: (tag: string) => void;
   canEdit?: boolean;
   /** First sample for this prompt, when it has one. */
@@ -20,6 +22,9 @@ interface Props {
 
 /** More than this and the tag row wraps to a second line, unbalancing the grid. */
 const TAGS_SHOWN = 3;
+const TAG =
+  "rounded-full bg-background px-2 py-1 text-[0.6875rem] leading-none text-subtle transition hover:text-foreground";
+
 /** Tool names are long ("Stable Diffusion"); past two the footer would truncate. */
 const MODELS_SHOWN = 2;
 
@@ -86,21 +91,22 @@ export default function PromptCard({ prompt, onChange, onTagClick, canEdit, imag
         </div>
 
         <p className="line-clamp-3 rounded-xl bg-background/60 p-3 font-mono text-xs leading-relaxed text-subtle">
-          {prompt.body}
+          <PromptText text={prompt.body} />
         </p>
 
         {prompt.tags.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5">
-            {prompt.tags.slice(0, TAGS_SHOWN).map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => onTagClick?.(tag)}
-                className="rounded-full bg-background px-2 py-1 text-[0.6875rem] leading-none text-subtle transition hover:text-foreground"
-              >
-                #{tag}
-              </button>
-            ))}
+            {prompt.tags.slice(0, TAGS_SHOWN).map((tag) =>
+              onTagClick ? (
+                <button key={tag} type="button" onClick={() => onTagClick(tag)} className={TAG}>
+                  #{tag}
+                </button>
+              ) : (
+                <Link key={tag} href={`/?tag=${encodeURIComponent(tag)}`} className={TAG}>
+                  #{tag}
+                </Link>
+              ),
+            )}
             {extraTags > 0 && (
               <span className="text-[0.6875rem] text-subtle">+{extraTags}</span>
             )}

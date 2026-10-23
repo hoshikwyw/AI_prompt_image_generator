@@ -174,6 +174,7 @@ export default function SampleImages({
         onClose={() => setOpenAt(null)}
         onNavigate={setOpenAt}
         promptBody={promptBody}
+        promptId={promptId}
       />
     </section>
   );

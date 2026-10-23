@@ -46,6 +46,15 @@ export async function deleteResource(url: string): Promise<void> {
   }
 }
 
+/**
+ * Counts a copy of a prompt. Fire and forget: the text is already on the
+ * clipboard, so a lost count is not worth interrupting anyone over, and
+ * `keepalive` lets the request finish even if the page is left straight away.
+ */
+export function recordCopy(promptId: string): void {
+  void fetch(`/api/prompts/${promptId}/copy`, { method: "POST", keepalive: true }).catch(() => {});
+}
+
 /** For a catch block: the message to show, whatever was thrown. */
 export const errorMessage = (err: unknown, fallback: string) =>
   err instanceof Error ? err.message : fallback;

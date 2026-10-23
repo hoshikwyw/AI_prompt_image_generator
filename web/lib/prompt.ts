@@ -436,6 +436,27 @@ export function filterPrompts(prompts: Prompt[], filter: PromptFilter = {}): Pro
   return out.sort((a, b) => rank(a) - rank(b) || sort(a, b));
 }
 
+/**
+ * Prompts to offer under this one. Only ones that suit the same people — a
+ * prompt for women never suggests one for men — then the same category first,
+ * then the same audience, most copied within each.
+ */
+export function relatedPrompts(prompt: Prompt, all: Prompt[], limit: number): Prompt[] {
+  const suits = (p: Prompt) =>
+    prompt.audience === "any" || p.audience === "any" || p.audience === prompt.audience;
+  const score = (p: Prompt) =>
+    (p.category === prompt.category ? 2 : 0) +
+    (prompt.audience !== "any" && p.audience === prompt.audience ? 1 : 0);
+
+  return all
+    .filter((p) => p.id !== prompt.id && suits(p))
+    .sort(
+      (a, b) =>
+        score(b) - score(a) || b.copies - a.copies || b.updatedAt.localeCompare(a.updatedAt),
+    )
+    .slice(0, limit);
+}
+
 /** Tag -> count, most used first. Drives the filter chips. */
 export function tagCounts(prompts: Prompt[]): Array<{ tag: string; count: number }> {
   const counts = new Map<string, number>();

@@ -2,13 +2,24 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import BackLink from "@/components/BackLink";
 import PromptActions from "@/components/PromptActions";
+import PromptCard from "@/components/PromptCard";
 import PromptText, { hasPlaceholders } from "@/components/PromptText";
 import SampleImages from "@/components/SampleImages";
+import ShareButton from "@/components/ShareButton";
 import { isAdmin } from "@/lib/admin";
-import { AI_TOOL_LABELS, AUDIENCE_LABELS, CATEGORY_LABELS, filterToQuery } from "@/lib/prompt";
-import { getPrompt, listImages } from "@/lib/store";
+import {
+  AI_TOOL_LABELS,
+  AUDIENCE_LABELS,
+  CATEGORY_LABELS,
+  filterToQuery,
+  relatedPrompts,
+} from "@/lib/prompt";
+import { getPrompt, listImages, listPrompts } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
+
+/** Two rows of two: enough to keep someone browsing, few enough to stay a footer. */
+const RELATED = 4;
 
 const dateFmt = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" });
 const day = (iso: string) => dateFmt.format(new Date(iso));
@@ -46,7 +57,10 @@ export default async function PromptPage({ params }: PageProps<"/prompts/[id]">)
   const prompt = await getPrompt(id);
   if (!prompt) notFound();
   const canEdit = await isAdmin();
-  const images = (await listImages([prompt.id])).get(prompt.id) ?? [];
+  const related = relatedPrompts(prompt, await listPrompts(), RELATED);
+  // One query for this prompt's samples and every suggestion's cover.
+  const allImages = await listImages([prompt.id, ...related.map((p) => p.id)]);
+  const images = allImages.get(prompt.id) ?? [];
   const placeholders = hasPlaceholders(prompt.body);
 
   // Who it is for, what it makes and where it works are what a reader checks
@@ -75,11 +89,14 @@ export default async function PromptPage({ params }: PageProps<"/prompts/[id]">)
     <article className="mx-auto max-w-3xl">
       <div className="flex items-center justify-between gap-4">
         <BackLink />
-        {canEdit && (
-          <Link href={`/prompts/${prompt.id}/edit`} className="btn btn-sm">
-            Edit
-          </Link>
-        )}
+        <div className="flex items-center gap-2">
+          <ShareButton title={prompt.title} text={prompt.summary || undefined} />
+          {canEdit && (
+            <Link href={`/prompts/${prompt.id}/edit`} className="btn btn-sm">
+              Edit
+            </Link>
+          )}
+        </div>
       </div>
 
       <header className="mb-7 mt-5 sm:mb-9">
@@ -179,6 +196,24 @@ export default async function PromptPage({ params }: PageProps<"/prompts/[id]">)
           </div>
         ))}
       </dl>
+
+      {related.length > 0 && (
+        <section className="mt-12 border-t border-line pt-8" aria-labelledby="related-heading">
+          <h2 id="related-heading" className="mb-4 text-base font-medium">
+            More like this
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
+            {related.map((p) => (
+              <PromptCard
+                key={p.id}
+                prompt={p}
+                canEdit={canEdit}
+                image={allImages.get(p.id)?.[0]}
+              />
+            ))}
+          </div>
+        </section>
+      )}
     </article>
   );
 }

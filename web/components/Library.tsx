@@ -96,6 +96,19 @@ export default function Library({
   const tags = useMemo(() => tagCounts(prompts), [prompts]);
   const shownTags = allTagsShown ? tags : tags.slice(0, TAGS_COLLAPSED);
 
+  // What each category chip would show given every other filter — so someone
+  // browsing for men sees at a glance which categories have anything for them.
+  // Empty ones are left out rather than greyed: a row of "0"s is noise, and
+  // the extra width wraps the rail onto a second line.
+  const categoryCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const p of filterPrompts(prompts, { ...filter, category: "all" })) {
+      counts.set(p.category, (counts.get(p.category) ?? 0) + 1);
+    }
+    return counts;
+  }, [prompts, filter]);
+  const allCount = [...categoryCounts.values()].reduce((a, b) => a + b, 0);
+
   // Keep the URL shareable without a navigation — this is view state, not a page.
   useEffect(() => {
     const query = filterToQuery(filter);
@@ -237,18 +250,26 @@ export default function Library({
             className="chip"
           >
             All
+            <span className="text-subtle">{allCount}</span>
           </button>
-          {CATEGORIES.map((category) => (
-            <button
-              key={category}
-              type="button"
-              onClick={() => set({ category })}
-              data-active={filter.category === category}
-              className="chip"
-            >
-              {CATEGORY_LABELS[category]}
-            </button>
-          ))}
+          {CATEGORIES.map((category) => {
+            const count = categoryCounts.get(category) ?? 0;
+            const active = filter.category === category;
+            // The chosen one stays even when empty, so it is visible to undo.
+            if (count === 0 && !active) return null;
+            return (
+              <button
+                key={category}
+                type="button"
+                onClick={() => set({ category })}
+                data-active={active}
+                className="chip"
+              >
+                {CATEGORY_LABELS[category]}
+                <span className="text-subtle">{count}</span>
+              </button>
+            );
+          })}
         </div>
 
         {tags.length > 0 && (
@@ -280,7 +301,8 @@ export default function Library({
       </div>
 
       <div className="mb-4 flex items-center justify-between gap-4 text-sm text-muted">
-        <span>
+        {/* Announced as it changes, so a screen reader hears what a filter did. */}
+        <span aria-live="polite">
           <strong className="font-medium text-foreground">{visible.length}</strong>
           {visible.length !== prompts.length && <> of {prompts.length}</>}{" "}
           {prompts.length === 1 ? "prompt" : "prompts"}
@@ -299,12 +321,18 @@ export default function Library({
       {visible.length === 0 ? (
         <div className="card border-dashed px-6 py-14 text-center sm:py-20">
           <p className="text-base font-medium">
-            {prompts.length === 0 ? "Your collection is empty" : "Nothing matches those filters"}
+            {prompts.length === 0
+              ? "Your collection is empty"
+              : filter.q
+                ? `No prompts match “${filter.q}”`
+                : "Nothing matches those filters"}
           </p>
           <p className="mx-auto mt-1.5 max-w-sm text-sm text-muted">
             {prompts.length === 0
               ? "Add the first one to get started."
-              : "Try a broader search, or clear the filters."}
+              : filter.q
+                ? "Try a shorter word — saree, anime, logo — or clear the filters."
+                : "Try a different audience or AI, or clear the filters."}
           </p>
           {prompts.length === 0 && canEdit && (
             <Link href="/prompts/new" className="btn btn-primary mt-5">

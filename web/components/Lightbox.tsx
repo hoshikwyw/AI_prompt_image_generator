@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { recordCopy } from "@/lib/api";
 import { copyText } from "@/lib/copy";
 import type { PromptImage } from "@/lib/prompt";
 
@@ -12,6 +13,8 @@ interface Props {
   onNavigate: (index: number) => void;
   /** Offered inside the lightbox: people decide from the picture, then copy. */
   promptBody?: string;
+  /** Counted like any other copy, so "most copied" includes these. */
+  promptId?: string;
 }
 
 /**
@@ -22,9 +25,27 @@ interface Props {
  * Copy lives in here too: the sample is what convinces someone they want the
  * prompt, so the next click should not be a hunt back up the page.
  */
-export default function Lightbox({ images, openAt, onClose, onNavigate, promptBody }: Props) {
+export default function Lightbox({
+  images,
+  openAt,
+  onClose,
+  onNavigate,
+  promptBody,
+  promptId,
+}: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const image = openAt === null ? undefined : images[openAt];
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+
+  // State, not the button's textContent: after the await, React has already
+  // cleared the event's currentTarget, so the old DOM poke threw silently.
+  async function copyPrompt() {
+    if (!promptBody) return;
+    const ok = await copyText(promptBody);
+    setCopyState(ok ? "copied" : "failed");
+    if (ok && promptId) recordCopy(promptId);
+    window.setTimeout(() => setCopyState("idle"), 1600);
+  }
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -70,19 +91,12 @@ export default function Lightbox({ images, openAt, onClose, onNavigate, promptBo
             </p>
             <div className="flex shrink-0 items-center gap-2">
               {promptBody && (
-                <button
-                  type="button"
-                  className="btn btn-sm"
-                  onClick={async (e) => {
-                    const ok = await copyText(promptBody);
-                    const button = e.currentTarget;
-                    button.textContent = ok ? "Copied" : "Copy failed";
-                    window.setTimeout(() => {
-                      button.textContent = "Copy prompt";
-                    }, 1600);
-                  }}
-                >
-                  Copy prompt
+                <button type="button" className="btn btn-sm" onClick={copyPrompt}>
+                  {copyState === "copied"
+                    ? "Copied"
+                    : copyState === "failed"
+                      ? "Copy failed"
+                      : "Copy prompt"}
                 </button>
               )}
               <button

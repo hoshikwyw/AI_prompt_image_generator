@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { fetchJson, sendJson } from "@/lib/api";
+import { fetchJson, recordCopy, sendJson } from "@/lib/api";
 import { copyText } from "@/lib/copy";
 import { AI_TOOL_LABELS, type AiTool, type Prompt } from "@/lib/prompt";
 import { showToast } from "@/lib/toast";
@@ -56,11 +56,7 @@ export default function PromptActions({
     const next = copies + 1;
     setCopies(next);
     onChange?.({ copies: next });
-    // Best effort. The text is already on the clipboard, so a lost count is not
-    // worth interrupting anyone over.
-    void fetch(`/api/prompts/${prompt.id}/copy`, { method: "POST", keepalive: true }).catch(
-      () => {},
-    );
+    recordCopy(prompt.id);
   }
 
   async function copy() {

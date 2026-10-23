@@ -49,7 +49,10 @@
 
     --foreground: #e7ebf3;
     --muted: #97a1b5;
-    --subtle: #6c7590;
+    /* The lightest text, and mostly small: tags, card footers, prompt previews.
+       Kept at 4.5:1 or better on every surface (WCAG AA for small text) — the
+       old #6c7590 fell to 3.7:1 on raised panels. */
+    --subtle: #7d86a2;
 
     --accent: #8b9dff;
     --accent-soft: #8b9dff1f;
