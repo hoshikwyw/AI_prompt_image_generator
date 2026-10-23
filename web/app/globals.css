@@ -316,6 +316,52 @@
     color: var(--foreground);
   }
 
+  /* One choice out of a few — who the prompts are for. Spans the row on a
+     phone so every option is a comfortable target; sizes to its content once
+     there is room. */
+  .segmented {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .segmented > button {
+    flex: 1 1 0;
+    min-height: 2rem;
+    padding: 0 0.9rem;
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 0.8125rem;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color 150ms ease,
+      color 150ms ease;
+  }
+
+  .segmented > button:hover {
+    color: var(--foreground);
+  }
+
+  .segmented > button[aria-pressed="true"] {
+    background: var(--accent-soft);
+    color: var(--foreground);
+    box-shadow: inset 0 0 0 1px var(--accent-border);
+  }
+
+  @media (min-width: 640px) {
+    .segmented {
+      display: inline-flex;
+    }
+
+    .segmented > button {
+      flex: none;
+    }
+  }
+
   .card {
     border-radius: var(--radius-lg);
     border: 1px solid var(--border);

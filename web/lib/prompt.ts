@@ -342,10 +342,22 @@ export interface PromptFilter {
   /** Matches title, summary, body, notes and tags. */
   q?: string;
   category?: Category | "all";
+  /** Who the visitor wants prompts for. Prompts for everyone always match. */
+  audience?: AudienceFilter | "all";
+  /** The AI tool they will paste into. Untagged prompts always match. */
+  model?: AiTool;
   tag?: string;
   favoritesOnly?: boolean;
   sort?: SortKey;
 }
+
+/**
+ * The audiences a visitor can filter by. "any" is not one of them: a prompt for
+ * everyone shows up under every choice, so filtering *for* it would only hide
+ * the prompts aimed at the visitor.
+ */
+export const AUDIENCE_FILTERS = ["female", "male", "couple"] as const;
+export type AudienceFilter = (typeof AUDIENCE_FILTERS)[number];
 
 export const SORTS = ["most-copied", "recent", "oldest", "title"] as const;
 
@@ -363,6 +375,15 @@ export function filterPrompts(prompts: Prompt[], filter: PromptFilter = {}): Pro
   const out = prompts.filter((p) => {
     if (filter.favoritesOnly && !p.favorite) return false;
     if (filter.category && filter.category !== "all" && p.category !== filter.category) return false;
+    if (
+      filter.audience &&
+      filter.audience !== "all" &&
+      p.audience !== "any" &&
+      p.audience !== filter.audience
+    ) {
+      return false;
+    }
+    if (filter.model && p.models.length > 0 && !p.models.includes(filter.model)) return false;
     if (filter.tag && !p.tags.includes(filter.tag)) return false;
     if (!q) return true;
     return (
@@ -403,14 +424,36 @@ export function tagCounts(prompts: Prompt[]): Array<{ tag: string; count: number
  */
 export function parseFilter(get: (key: string) => string | null | undefined): PromptFilter {
   const category = get("category");
+  const audience = get("for");
+  const model = get("ai");
   const sort = get("sort");
   return {
     q: get("q")?.trim() || undefined,
     category: CATEGORIES.includes(category as Category) ? (category as Category) : "all",
+    audience: AUDIENCE_FILTERS.includes(audience as AudienceFilter)
+      ? (audience as AudienceFilter)
+      : "all",
+    model: AI_TOOLS.includes(model as AiTool) ? (model as AiTool) : undefined,
     tag: get("tag")?.trim() || undefined,
     favoritesOnly: get("favorites") === "1",
     sort: SORTS.includes(sort as SortKey) ? (sort as SortKey) : DEFAULT_SORT,
   };
+}
+
+/**
+ * Who the visitor last browsed for and which AI they paste into, so they do not
+ * pick "Women · Gemini" again on every visit. A cookie rather than local
+ * storage because the server renders the library: it can open already
+ * filtered, with no flash of everything first. Holds the same `for`/`ai` query
+ * a link would, and is read through `parseFilter`, so a stale value falls back
+ * exactly the way a mangled link does.
+ */
+export const PREFS_COOKIE = "promptbook-prefs";
+
+export function readPrefs(value: string | undefined): Pick<PromptFilter, "audience" | "model"> {
+  const saved = new URLSearchParams(value ?? "");
+  const { audience, model } = parseFilter((key) => saved.get(key));
+  return { audience, model };
 }
 
 /** Inverse of `parseFilter`. Defaults are omitted so a plain view has a clean URL. */
@@ -418,6 +461,8 @@ export function filterToQuery(filter: PromptFilter): string {
   const params = new URLSearchParams();
   if (filter.q) params.set("q", filter.q);
   if (filter.category && filter.category !== "all") params.set("category", filter.category);
+  if (filter.audience && filter.audience !== "all") params.set("for", filter.audience);
+  if (filter.model) params.set("ai", filter.model);
   if (filter.tag) params.set("tag", filter.tag);
   if (filter.favoritesOnly) params.set("favorites", "1");
   if (filter.sort && filter.sort !== DEFAULT_SORT) params.set("sort", filter.sort);

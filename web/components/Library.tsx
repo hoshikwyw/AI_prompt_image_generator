@@ -6,13 +6,19 @@ import ImportExport from "./ImportExport";
 import PromptCard from "./PromptCard";
 import Select from "./Select";
 import {
+  AI_TOOLS,
+  AI_TOOL_LABELS,
+  AUDIENCE_FILTERS,
+  AUDIENCE_LABELS,
   CATEGORIES,
   CATEGORY_LABELS,
   DEFAULT_SORT,
+  PREFS_COOKIE,
   SORTS,
   filterPrompts,
   filterToQuery,
   tagCounts,
+  type AiTool,
   type Prompt,
   type PromptFilter,
   type PromptImage,
@@ -21,7 +27,10 @@ import {
 
 interface Props {
   prompts: Prompt[];
-  /** Parsed from the query string on the server, so a shared link opens filtered. */
+  /**
+   * Parsed from the query string on the server, so a shared link opens
+   * filtered — or, on a plain visit, from the visitor's remembered choice.
+   */
   initialFilter: PromptFilter;
   /** False for a visitor: the write controls are not rendered at all. */
   canEdit: boolean;
@@ -38,6 +47,25 @@ const SORT_LABELS: Record<SortKey, string> = {
 
 /** Beyond this the tag rail turns into a wall, so the rest hide behind a toggle. */
 const TAGS_COLLAPSED = 8;
+
+const AUDIENCE_OPTIONS = ["all", ...AUDIENCE_FILTERS] as const;
+const MODEL_OPTIONS = [
+  { value: "all" as const, label: "Any AI" },
+  ...AI_TOOLS.map((tool) => ({ value: tool, label: AI_TOOL_LABELS[tool] })),
+];
+
+type Prefs = Pick<PromptFilter, "audience" | "model">;
+
+/** A year: long enough to feel remembered, and refreshed on every choice. */
+const PREFS_MAX_AGE = 60 * 60 * 24 * 365;
+
+/** Saves the choice the page reads on the next visit; see `PREFS_COOKIE`. */
+function writePrefs({ audience, model }: Prefs) {
+  const value = filterToQuery({ audience, model });
+  document.cookie = value
+    ? `${PREFS_COOKIE}=${encodeURIComponent(value)}; path=/; max-age=${PREFS_MAX_AGE}; samesite=lax`
+    : `${PREFS_COOKIE}=; path=/; max-age=0; samesite=lax`;
+}
 
 /**
  * The library. Filtering runs here rather than over the network — the whole
@@ -63,12 +91,26 @@ export default function Library({ prompts: initial, initialFilter, canEdit, cove
 
   const set = (patch: Partial<PromptFilter>) => setFilter((f) => ({ ...f, ...patch }));
 
+  /** Only a choice the visitor makes is remembered — never one a link made. */
+  const choose = (patch: Prefs) => {
+    const next = { ...filter, ...patch };
+    writePrefs(next);
+    setFilter(next);
+  };
+
+  const clearFilters = () => {
+    writePrefs({});
+    setFilter({ category: "all", sort: filter.sort });
+  };
+
   const patchPrompt = (id: string, patch: Partial<Prompt>) =>
     setPrompts((list) => list.map((p) => (p.id === id ? { ...p, ...patch } : p)));
 
   const isFiltered =
     Boolean(filter.q) ||
     (filter.category ?? "all") !== "all" ||
+    (filter.audience ?? "all") !== "all" ||
+    Boolean(filter.model) ||
     Boolean(filter.tag) ||
     Boolean(filter.favoritesOnly);
 
@@ -112,11 +154,19 @@ export default function Library({ prompts: initial, initialFilter, canEdit, cove
 
           <div className="flex items-center gap-2.5">
             <Select
+              label="AI tool"
+              value={filter.model ?? "all"}
+              options={MODEL_OPTIONS}
+              onChange={(model) => choose({ model: model === "all" ? undefined : (model as AiTool) })}
+              className="min-w-0 flex-1 sm:w-44 sm:flex-none"
+            />
+
+            <Select
               label="Sort prompts"
               value={filter.sort ?? DEFAULT_SORT}
               options={SORTS.map((s) => ({ value: s, label: SORT_LABELS[s] }))}
               onChange={(sort) => set({ sort })}
-              className="flex-1 sm:w-48 sm:flex-none"
+              className="min-w-0 flex-1 sm:w-48 sm:flex-none"
             />
 
             <button
@@ -136,6 +186,19 @@ export default function Library({ prompts: initial, initialFilter, canEdit, cove
               <span className="sr-only">Favourites only</span>
             </button>
           </div>
+        </div>
+
+        <div className="segmented" role="group" aria-label="Show prompts for">
+          {AUDIENCE_OPTIONS.map((audience) => (
+            <button
+              key={audience}
+              type="button"
+              onClick={() => choose({ audience })}
+              aria-pressed={(filter.audience ?? "all") === audience}
+            >
+              {audience === "all" ? "All" : AUDIENCE_LABELS[audience]}
+            </button>
+          ))}
         </div>
 
         <div className="rail">
@@ -197,7 +260,7 @@ export default function Library({ prompts: initial, initialFilter, canEdit, cove
         {isFiltered && (
           <button
             type="button"
-            onClick={() => setFilter({ category: "all", sort: filter.sort })}
+            onClick={clearFilters}
             className="btn btn-ghost btn-sm"
           >
             Clear filters
@@ -223,7 +286,7 @@ export default function Library({ prompts: initial, initialFilter, canEdit, cove
           {prompts.length > 0 && (
             <button
               type="button"
-              onClick={() => setFilter({ category: "all", sort: filter.sort })}
+              onClick={clearFilters}
               className="btn mt-5"
             >
               Clear filters
