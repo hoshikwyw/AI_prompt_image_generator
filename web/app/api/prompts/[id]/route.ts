@@ -1,22 +1,24 @@
 import { requireAdmin } from "@/lib/admin";
-import { validateDraft, type PromptDraft } from "@/lib/prompt";
+import { NO_STORE, errorResponse, readJson } from "@/lib/http";
+import { toDraft, validateDraft, type PromptDraft } from "@/lib/prompt";
 import { deletePrompt, getPrompt, updatePrompt } from "@/lib/store";
 
 export const runtime = "nodejs";
 
-const notFound = () => Response.json({ error: "Prompt not found." }, { status: 404 });
-const noStore = { headers: { "Cache-Control": "no-store" } };
+const notFound = () => errorResponse("Prompt not found.", 404);
 
 export async function GET(_request: Request, ctx: RouteContext<"/api/prompts/[id]">) {
   const { id } = await ctx.params;
   const prompt = await getPrompt(id);
-  return prompt ? Response.json(prompt, noStore) : notFound();
+  return prompt ? Response.json(prompt, { headers: NO_STORE }) : notFound();
 }
 
 /**
  * Partial edit. The patch is merged onto the stored prompt and the *result* is
  * validated, so a one-field change still cannot leave a prompt with an empty
- * body, and the client gets the same error shape POST returns.
+ * body, and the client gets the same error shape POST returns. `validateDraft`
+ * reads only the draft fields, so `id`, `createdAt` and `copies` in a posted
+ * prompt are ignored rather than written.
  *
  * `favorite` is set explicitly rather than toggled: a retried request then
  * lands on the same state instead of flipping it back.
@@ -29,38 +31,20 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/prompts/[i
   const current = await getPrompt(id);
   if (!current) return notFound();
 
-  let body: Record<string, unknown>;
-  try {
-    body = (await request.json()) as Record<string, unknown>;
-  } catch {
-    return Response.json({ error: "Expected a JSON body." }, { status: 400 });
-  }
+  const body = await readJson(request);
+  if (body instanceof Response) return body;
+  const patch = (typeof body === "object" && body !== null ? body : {}) as Record<string, unknown>;
 
-  const editable: (keyof PromptDraft)[] = [
-    "title",
-    "summary",
-    "body",
-    "notes",
-    "category",
-    "tags",
-    "audience",
-    "models",
-    "source",
-    "accent",
-  ];
-  const merged: Record<string, unknown> = { ...current };
-  for (const key of editable) if (key in body) merged[key] = body[key];
-
-  const { ok, errors, draft } = validateDraft(merged);
+  const { ok, errors, draft } = validateDraft({ ...toDraft(current), ...patch });
   if (!ok) return Response.json({ errors }, { status: 422 });
 
-  const patch: Partial<PromptDraft> & { favorite?: boolean } = { ...draft };
-  if (typeof body.favorite === "boolean") patch.favorite = body.favorite;
+  const update: Partial<PromptDraft> & { favorite?: boolean } = { ...draft };
+  if (typeof patch.favorite === "boolean") update.favorite = patch.favorite;
 
   // The id is the slug of the original title and stays put once created —
   // renaming a prompt must not break a link someone already saved.
-  const updated = await updatePrompt(id, patch);
-  return updated ? Response.json(updated, noStore) : notFound();
+  const updated = await updatePrompt(id, update);
+  return updated ? Response.json(updated, { headers: NO_STORE }) : notFound();
 }
 
 export async function DELETE(_request: Request, ctx: RouteContext<"/api/prompts/[id]">) {

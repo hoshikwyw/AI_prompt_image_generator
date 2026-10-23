@@ -8,26 +8,8 @@
  * Prints what it found and exits non-zero on the first real problem, so it is
  * usable as a gate before pointing the app at a project. Never prints a key.
  */
-import { readFileSync } from "node:fs";
+import "./load-env.mjs";
 import { createClient } from "@supabase/supabase-js";
-
-// Next loads .env.local itself; a bare node script has to do it by hand.
-for (const file of [".env.local", ".env"]) {
-  try {
-    // Split on \r?\n: a file edited on Windows can carry CRLF, and a trailing
-    // \r left on the line would otherwise beat the value regex below.
-    for (const line of readFileSync(new URL(`../${file}`, import.meta.url), "utf8").split(
-      /\r?\n/,
-    )) {
-      const match = /^\s*([A-Z0-9_]+)\s*=\s*(.*)$/.exec(line);
-      if (match && !process.env[match[1]]) {
-        process.env[match[1]] = match[2].trim().replace(/^["']|["']$/g, "");
-      }
-    }
-  } catch {
-    // Missing env file is fine; the checks below report what is absent.
-  }
-}
 
 const url = process.env.SUPABASE_URL ?? "";
 const anonKey = process.env.SUPABASE_ANON_KEY ?? "";

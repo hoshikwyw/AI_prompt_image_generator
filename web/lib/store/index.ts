@@ -39,7 +39,6 @@ export const readImageBytes = (imageId: string) => backend.readImageBytes?.(imag
 
 export {
   MAX_IMPORT,
-  RESERVED_IDS,
   type ImportSummary,
   type NewImage,
   type StoreBackend,

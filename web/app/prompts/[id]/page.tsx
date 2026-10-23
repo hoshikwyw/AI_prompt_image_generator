@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import BackLink from "@/components/BackLink";
 import PromptActions from "@/components/PromptActions";
 import SampleImages from "@/components/SampleImages";
 import { isAdmin } from "@/lib/admin";
@@ -14,7 +15,7 @@ const day = (iso: string) => dateFmt.format(new Date(iso));
 export async function generateMetadata({ params }: PageProps<"/prompts/[id]">) {
   const { id } = await params;
   const prompt = await getPrompt(id);
-  return { title: prompt ? `${prompt.title} — Promptbook` : "Prompt not found" };
+  return { title: prompt ? prompt.title : "Prompt not found" };
 }
 
 export default async function PromptPage({ params }: PageProps<"/prompts/[id]">) {
@@ -36,9 +37,7 @@ export default async function PromptPage({ params }: PageProps<"/prompts/[id]">)
   return (
     <article className="mx-auto max-w-3xl">
       <div className="flex items-center justify-between gap-4">
-        <Link href="/" className="btn btn-ghost btn-sm -ml-3">
-          <span aria-hidden>←</span> Library
-        </Link>
+        <BackLink />
         {canEdit && (
           <Link href={`/prompts/${prompt.id}/edit`} className="btn btn-sm">
             Edit

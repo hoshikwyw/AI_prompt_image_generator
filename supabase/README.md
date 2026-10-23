@@ -86,4 +86,4 @@ trip. Uploads and deletes have no storage policy, which likewise leaves them to 
   moment cannot lose a count the way a read-modify-write would.
 - The `id` is the slug, checked to be `^[a-z0-9-]+$` and never `new` or `edit` — those are page
   routes, and a prompt holding one would be unreachable. Kept in step with `RESERVED_IDS` in
-  `web/lib/store.ts`.
+  `web/lib/store/shared.ts`.

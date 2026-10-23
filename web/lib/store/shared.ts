@@ -1,9 +1,8 @@
 import {
-  legacyModels,
+  readModels,
   slugify,
   toAudience,
   toCategory,
-  toModels,
   validateDraft,
   type Prompt,
   type PromptDraft,
@@ -57,7 +56,7 @@ export const now = () => new Date().toISOString();
  */
 export function upgradeStoredPrompt(stored: Prompt): Prompt {
   const raw = { ...stored } as unknown as Record<string, unknown>;
-  const models = Array.isArray(raw.models) ? toModels(raw.models) : legacyModels(raw.targetModel);
+  const models = readModels(raw) ?? [];
   delete raw.targetModel;
   return {
     ...(raw as unknown as Prompt),

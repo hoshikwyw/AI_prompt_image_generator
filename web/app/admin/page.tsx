@@ -1,10 +1,11 @@
 import Link from "next/link";
 import AdminLogin from "@/components/AdminLogin";
 import AdminSignOut from "@/components/AdminSignOut";
+import BackLink from "@/components/BackLink";
 import { isAdmin, writePolicy } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Admin — Promptbook" };
+export const metadata = { title: "Admin" };
 
 export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
   const params = await searchParams;
@@ -18,9 +19,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
 
   return (
     <div className="mx-auto max-w-xl">
-      <Link href="/" className="btn btn-ghost btn-sm -ml-3">
-        <span aria-hidden>←</span> Library
-      </Link>
+      <BackLink />
       <h1 className="mb-6 mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">Admin</h1>
 
       {policy === "open" && (

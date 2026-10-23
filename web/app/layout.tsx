@@ -9,7 +9,8 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Promptbook — AI image prompts",
+  // Pages set just their own name; the template adds the site's.
+  title: { default: "Promptbook — AI image prompts", template: "%s — Promptbook" },
   description:
     "Ready-to-copy AI image prompts for ChatGPT, Gemini, Midjourney and more — for women, men and couples.",
 };

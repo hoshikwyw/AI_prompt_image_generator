@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Select from "./Select";
+import { ApiError, errorMessage, fetchJson, sendJson } from "@/lib/api";
 import {
   ACCENTS,
   AI_TOOLS,
@@ -13,6 +14,7 @@ import {
   CATEGORIES,
   CATEGORY_LABELS,
   EMPTY_DRAFT,
+  toDraft,
   toModels,
   MAX,
   normalizeTag,
@@ -43,22 +45,7 @@ export default function PromptForm({ prompt }: Props) {
   const router = useRouter();
   const editing = Boolean(prompt);
 
-  const [draft, setDraft] = useState<PromptDraft>(() =>
-    prompt
-      ? {
-          title: prompt.title,
-          summary: prompt.summary,
-          body: prompt.body,
-          notes: prompt.notes,
-          category: prompt.category,
-          tags: prompt.tags,
-          audience: prompt.audience,
-          models: prompt.models,
-          source: prompt.source,
-          accent: prompt.accent,
-        }
-      : EMPTY_DRAFT,
-  );
+  const [draft, setDraft] = useState<PromptDraft>(() => (prompt ? toDraft(prompt) : EMPTY_DRAFT));
   // Tags are edited as free text and only normalised on the way out, so typing
   // a space mid-word does not rewrite the field under the cursor.
   const [tagsText, setTagsText] = useState(prompt?.tags.join(", ") ?? "");
@@ -98,26 +85,21 @@ export default function PromptForm({ prompt }: Props) {
     setSubmitting(true);
     setErrors({});
     try {
-      const res = await fetch(editing ? `/api/prompts/${prompt!.id}` : "/api/prompts", {
-        method: editing ? "PATCH" : "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(candidate),
-      });
-
-      if (res.status === 422) {
-        const { errors: serverErrors } = (await res.json()) as { errors: Errors };
-        setErrors(serverErrors);
-        return;
-      }
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const saved = (await res.json()) as Prompt;
+      const saved = await fetchJson<Prompt>(
+        editing ? `/api/prompts/${prompt!.id}` : "/api/prompts",
+        sendJson(editing ? "PATCH" : "POST", candidate),
+      );
       router.push(`/prompts/${saved.id}`);
       // The library and detail pages read the file per request; refresh drops
       // the client-side route cache so the change is visible immediately.
       router.refresh();
     } catch (err) {
-      setErrors({ form: err instanceof Error ? err.message : "Could not save the prompt." });
+      // A 422 carries per-field messages, the same shape validateDraft returns.
+      if (err instanceof ApiError && err.status === 422) {
+        setErrors((err.body as { errors: Errors }).errors);
+      } else {
+        setErrors({ form: errorMessage(err, "Could not save the prompt.") });
+      }
     } finally {
       setSubmitting(false);
     }

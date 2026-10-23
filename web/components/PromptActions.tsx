@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { fetchJson, sendJson } from "@/lib/api";
 import { copyText } from "@/lib/copy";
 import type { Prompt } from "@/lib/prompt";
 
@@ -73,12 +74,7 @@ export default function PromptActions({
     setFavorite(next);
     onChange?.({ favorite: next });
     try {
-      const res = await fetch(`/api/prompts/${prompt.id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ favorite: next }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await fetchJson(`/api/prompts/${prompt.id}`, sendJson("PATCH", { favorite: next }));
     } catch {
       setFavorite(!next);
       onChange?.({ favorite: !next });

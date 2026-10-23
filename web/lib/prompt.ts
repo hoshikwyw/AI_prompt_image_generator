@@ -143,6 +143,18 @@ export function legacyModels(targetModel: unknown): AiTool[] {
   return match ? [match[1]] : [];
 }
 
+/**
+ * `models` from untrusted or stored data — a form post, an import file, a row
+ * written before `models` existed (which carries a free-text `targetModel`
+ * instead). Null when `models` is present but not a list, so the caller
+ * decides whether that is an error or just "any AI".
+ */
+export function readModels(raw: { models?: unknown; targetModel?: unknown }): AiTool[] | null {
+  if (Array.isArray(raw.models)) return toModels(raw.models);
+  if (raw.models === undefined) return legacyModels(raw.targetModel);
+  return null;
+}
+
 /** One line for a card or a meta row: "ChatGPT, Gemini", or "Any AI" when untagged. */
 export const modelsLabel = (models: AiTool[]) =>
   models.length ? models.map((m) => AI_TOOL_LABELS[m]).join(", ") : "Any AI";
@@ -238,6 +250,16 @@ export interface PromptDraft {
   accent: string;
 }
 
+/**
+ * The editable part of a stored prompt — what the edit form starts from and an
+ * edit is merged onto. Spelled out rather than looped so that adding a field to
+ * `PromptDraft` without adding it here is a compile error.
+ */
+export function toDraft(prompt: PromptDraft): PromptDraft {
+  const { title, summary, body, notes, category, tags, audience, models, source, accent } = prompt;
+  return { title, summary, body, notes, category, tags, audience, models, source, accent };
+}
+
 export const EMPTY_DRAFT: PromptDraft = {
   title: "",
   summary: "",
@@ -302,13 +324,10 @@ export function validateDraft(input: unknown): ValidationResult {
   else if (body.length > MAX.body) errors.body = `Prompt text is over ${MAX.body} characters.`;
 
   const category = toCategory(raw.category);
-  // A row from before `models` existed carries a free-text targetModel instead.
-  // Anything else in `models` is a mistake, and quietly reading it as "any AI"
-  // would wipe a prompt's tools on a bad PATCH.
-  let models: AiTool[] = [];
-  if (Array.isArray(raw.models)) models = toModels(raw.models);
-  else if (raw.models === undefined) models = legacyModels(raw.targetModel);
-  else errors.models = "AI tools must be a list.";
+  // Quietly reading a malformed `models` as "any AI" would wipe a prompt's
+  // tools on a bad PATCH, so it is an error here.
+  const models = readModels(raw);
+  if (!models) errors.models = "AI tools must be a list.";
 
   const tags = Array.from(
     new Set(
@@ -336,7 +355,7 @@ export function validateDraft(input: unknown): ValidationResult {
       category,
       tags,
       audience: toAudience(raw.audience),
-      models,
+      models: models ?? [],
       source,
       accent,
     },

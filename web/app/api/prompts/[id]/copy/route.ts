@@ -1,3 +1,4 @@
+import { NO_STORE, errorResponse } from "@/lib/http";
 import { recordCopy } from "@/lib/store";
 
 export const runtime = "nodejs";
@@ -10,7 +11,7 @@ export const runtime = "nodejs";
 export async function POST(_request: Request, ctx: RouteContext<"/api/prompts/[id]/copy">) {
   const { id } = await ctx.params;
   const prompt = await recordCopy(id);
-  if (!prompt) return Response.json({ error: "Prompt not found." }, { status: 404 });
+  if (!prompt) return errorResponse("Prompt not found.", 404);
 
-  return Response.json({ copies: prompt.copies }, { headers: { "Cache-Control": "no-store" } });
+  return Response.json({ copies: prompt.copies }, { headers: NO_STORE });
 }

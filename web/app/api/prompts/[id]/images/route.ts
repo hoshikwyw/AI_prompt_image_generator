@@ -1,4 +1,5 @@
 import { requireAdmin } from "@/lib/admin";
+import { NO_STORE, errorResponse as fail } from "@/lib/http";
 import {
   ACCEPTED_SAMPLE_MIME,
   MAX_CAPTION,
@@ -10,12 +11,10 @@ import { addImage, listImages } from "@/lib/store";
 
 export const runtime = "nodejs";
 
-const fail = (message: string, status: number) => Response.json({ error: message }, { status });
-
 export async function GET(_request: Request, ctx: RouteContext<"/api/prompts/[id]/images">) {
   const { id } = await ctx.params;
   const images = (await listImages([id])).get(id) ?? [];
-  return Response.json({ images }, { headers: { "Cache-Control": "no-store" } });
+  return Response.json({ images }, { headers: NO_STORE });
 }
 
 /**

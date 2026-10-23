@@ -2,35 +2,28 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { deleteResource, errorMessage } from "@/lib/api";
+import { useArmed } from "@/lib/use-armed";
 
-/**
- * Two-step delete rather than a `confirm()` dialog: the second click is the
- * confirmation, and it disarms itself after a few seconds so a stray click
- * never sits primed on a destructive button.
- */
+/** Two-step delete: see `useArmed`. */
 export default function DeletePrompt({ id, title }: { id: string; title: string }) {
   const router = useRouter();
-  const [armed, setArmed] = useState(false);
+  const { armed, arm, disarm } = useArmed();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function onClick() {
     if (busy) return;
-    if (!armed) {
-      setArmed(true);
-      window.setTimeout(() => setArmed(false), 4000);
-      return;
-    }
+    if (!armed) return arm();
 
     setBusy(true);
     try {
-      const res = await fetch(`/api/prompts/${id}`, { method: "DELETE" });
-      if (!res.ok && res.status !== 404) throw new Error(`HTTP ${res.status}`);
+      await deleteResource(`/api/prompts/${id}`);
       router.push("/");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not delete the prompt.");
-      setArmed(false);
+      setError(errorMessage(err, "Could not delete the prompt."));
+      disarm();
       setBusy(false);
     }
   }

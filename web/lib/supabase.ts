@@ -30,7 +30,7 @@ export const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET || "prompt-samples";
 export const supabaseConfigured = (): boolean => Boolean(url && anonKey);
 
 /** True when writes are possible. Reads can work without this. */
-export const supabaseCanWrite = (): boolean => Boolean(url && serviceKey);
+const supabaseCanWrite = (): boolean => Boolean(url && serviceKey);
 
 /**
  * Sessions are pointless here — every request builds its own client and there
@@ -63,15 +63,4 @@ export function supabaseWrite(): SupabaseClient {
 /** Public URL for an object in the samples bucket. */
 export function publicImageUrl(storagePath: string): string {
   return supabaseRead().storage.from(SUPABASE_BUCKET).getPublicUrl(storagePath).data.publicUrl;
-}
-
-/** Reported by the setup check and the docs; safe to show, contains no secret. */
-export function supabaseStatus() {
-  return {
-    url: url || null,
-    hasAnonKey: Boolean(anonKey),
-    hasServiceKey: Boolean(serviceKey),
-    bucket: SUPABASE_BUCKET,
-    backend: supabaseConfigured() ? ("supabase" as const) : ("disk" as const),
-  };
 }

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { errorMessage, fetchJson, sendJson } from "@/lib/api";
 
 export default function AdminLogin({ next }: { next: string }) {
   const router = useRouter();
@@ -16,21 +17,14 @@ export default function AdminLogin({ next }: { next: string }) {
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/admin/session", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ passphrase }),
-      });
-      const data = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
-
+      await fetchJson("/api/admin/session", sendJson("POST", { passphrase }));
       setPassphrase("");
       router.push(next);
       // The pages decide what to render from the cookie, so they have to be
       // re-fetched for the edit controls to appear.
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not sign in.");
+      setError(errorMessage(err, "Could not sign in."));
       setBusy(false);
     }
   }

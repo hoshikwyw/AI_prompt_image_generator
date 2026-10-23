@@ -1,4 +1,5 @@
 import { requireAdmin } from "@/lib/admin";
+import { NO_STORE, readJson } from "@/lib/http";
 import { parseFilter, tagCounts, validateDraft } from "@/lib/prompt";
 import { createPrompt, listPrompts } from "@/lib/store";
 
@@ -11,22 +12,15 @@ export async function GET(request: Request) {
   // do not vanish as you narrow the search.
   const all = await listPrompts();
 
-  return Response.json(
-    { prompts, total: all.length, tags: tagCounts(all) },
-    { headers: { "Cache-Control": "no-store" } },
-  );
+  return Response.json({ prompts, total: all.length, tags: tagCounts(all) }, { headers: NO_STORE });
 }
 
 export async function POST(request: Request) {
   const denied = await requireAdmin();
   if (denied) return denied;
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return Response.json({ error: "Expected a JSON body." }, { status: 400 });
-  }
+  const body = await readJson(request);
+  if (body instanceof Response) return body;
 
   const { ok, errors, draft } = validateDraft(body);
   if (!ok) return Response.json({ errors }, { status: 422 });

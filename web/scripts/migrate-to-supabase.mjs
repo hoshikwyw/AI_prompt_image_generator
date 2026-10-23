@@ -12,32 +12,17 @@
  * otherwise pile up copies.
  *
  * This talks to Postgres directly rather than through lib/store, because the
- * app's module graph is server-only Next code. The column mapping below is the
- * one thing it duplicates; the migration in supabase/migrations is the source
- * of truth for those names.
+ * app's store is server-only Next code. The column mapping below is the one
+ * thing it duplicates; the migration in supabase/migrations is the source of
+ * truth for those names. The value rules are not duplicated: lib/prompt.ts has
+ * no imports, so Node runs it directly (native TypeScript type stripping).
  */
-import { readFileSync } from "node:fs";
+import "./load-env.mjs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
-
-const root = new URL("..", import.meta.url);
-
-for (const file of [".env.local", ".env"]) {
-  try {
-    // Split on \r?\n: a file edited on Windows can carry CRLF, and a trailing
-    // \r left on the line would otherwise beat the value regex below.
-    for (const line of readFileSync(new URL(file, root), "utf8").split(/\r?\n/)) {
-      const match = /^\s*([A-Z0-9_]+)\s*=\s*(.*)$/.exec(line);
-      if (match && !process.env[match[1]]) {
-        process.env[match[1]] = match[2].trim().replace(/^["']|["']$/g, "");
-      }
-    }
-  } catch {
-    // No env file is a problem the checks below report properly.
-  }
-}
+import { readModels, toAudience, toCategory } from "../lib/prompt.ts";
 
 const url = process.env.SUPABASE_URL ?? "";
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
@@ -66,48 +51,9 @@ const prompts = Array.isArray(collection.prompts) ? collection.prompts : [];
 const images = Array.isArray(collection.images) ? collection.images : [];
 
 // A local file saved before audience and models existed still has the old
-// categories and a free-text targetModel. These mirror LEGACY_CATEGORIES and
-// LEGACY_MODEL_PATTERNS in lib/prompt.ts, so old files migrate the same way the
-// app reads them.
-const LEGACY_CATEGORIES = {
-  artistic: "art",
-  photographic: "portrait",
-  stylised: "art",
-  character: "portrait",
-  scene: "landscape",
-};
-const LEGACY_MODEL_PATTERNS = [
-  [/gemini|nano.?banana|imagen/i, "gemini"],
-  [/chatgpt|gpt|dall/i, "chatgpt"],
-  [/midjourney/i, "midjourney"],
-  [/flux/i, "flux"],
-  [/stable.?diffusion|sdxl/i, "stable-diffusion"],
-  [/leonardo/i, "leonardo"],
-  [/ideogram/i, "ideogram"],
-  [/grok/i, "grok"],
-  [/copilot|bing|designer/i, "copilot"],
-];
-const legacyModels = (text) => {
-  const match = LEGACY_MODEL_PATTERNS.find(([pattern]) => pattern.test(text ?? ""));
-  return match ? [match[1]] : [];
-};
-
-// The lists the migration's check constraints allow, mirroring lib/prompt.ts.
-// A value outside them would fail its whole upsert batch, so it is coerced the
-// way the app coerces it on read.
-const CATEGORIES = [
-  "portrait", "fashion", "anime", "art", "3d", "fantasy", "landscape",
-  "architecture", "product", "logo", "animals", "food", "other",
-];
-const AUDIENCES = ["any", "female", "male", "couple"];
-const AI_TOOLS = [
-  "chatgpt", "gemini", "midjourney", "flux", "stable-diffusion",
-  "leonardo", "ideogram", "grok", "copilot",
-];
-
-const toCategory = (value) =>
-  CATEGORIES.includes(value) ? value : (LEGACY_CATEGORIES[value] ?? "other");
-const toModels = (value) => AI_TOOLS.filter((tool) => value.includes(tool));
+// categories and a free-text targetModel, and a hand-edited one can hold
+// anything. Coerced exactly the way the app reads them, so nothing reaches a
+// check constraint that would fail its whole upsert batch.
 
 const toRow = (p) => ({
   id: p.id,
@@ -117,8 +63,8 @@ const toRow = (p) => ({
   notes: p.notes ?? "",
   category: toCategory(p.category),
   tags: p.tags ?? [],
-  audience: AUDIENCES.includes(p.audience) ? p.audience : "any",
-  models: Array.isArray(p.models) ? toModels(p.models) : legacyModels(p.targetModel),
+  audience: toAudience(p.audience),
+  models: readModels(p) ?? [],
   source: p.source ?? "",
   accent: p.accent ?? "",
   favorite: Boolean(p.favorite),

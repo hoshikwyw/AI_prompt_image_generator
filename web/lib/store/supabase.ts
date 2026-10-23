@@ -2,10 +2,9 @@ import { randomUUID } from "node:crypto";
 import { SUPABASE_BUCKET, publicImageUrl, supabaseRead, supabaseWrite } from "../supabase";
 import {
   filterPrompts,
-  legacyModels,
+  readModels,
   toAudience,
   toCategory,
-  toModels,
   type Prompt,
   type PromptDraft,
   type PromptFilter,
@@ -91,7 +90,7 @@ const toPrompt = (row: Row): Prompt => ({
   category: toCategory(row.category),
   tags: row.tags ?? [],
   audience: toAudience(row.audience),
-  models: row.models !== undefined ? toModels(row.models) : legacyModels(row.target_model),
+  models: readModels({ models: row.models, targetModel: row.target_model }) ?? [],
   source: row.source,
   accent: row.accent,
   favorite: row.favorite,

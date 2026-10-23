@@ -1,4 +1,5 @@
 import { requireAdmin } from "@/lib/admin";
+import { errorResponse } from "@/lib/http";
 import { deleteImage, readImageBytes } from "@/lib/store";
 
 export const runtime = "nodejs";
@@ -32,5 +33,5 @@ export async function DELETE(_request: Request, ctx: RouteContext<"/api/images/[
   const { id } = await ctx.params;
   return (await deleteImage(id))
     ? new Response(null, { status: 204 })
-    : Response.json({ error: "Image not found." }, { status: 404 });
+    : errorResponse("Image not found.", 404);
 }

@@ -3,7 +3,9 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Lightbox from "./Lightbox";
+import { deleteResource, errorMessage, fetchJson } from "@/lib/api";
 import {
+  ACCEPTED_SAMPLE_MIME,
   MAX_CAPTION,
   MAX_SAMPLE_BYTES,
   MAX_SAMPLE_LABEL,
@@ -56,15 +58,15 @@ export default function SampleImages({
       body.append("image", file);
       body.append("caption", caption);
 
-      const res = await fetch(`/api/prompts/${promptId}/images`, { method: "POST", body });
-      const data = (await res.json()) as PromptImage & { error?: string };
-      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
-
-      setImages((list) => [...list, data]);
+      const added = await fetchJson<PromptImage>(`/api/prompts/${promptId}/images`, {
+        method: "POST",
+        body,
+      });
+      setImages((list) => [...list, added]);
       setCaption("");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed.");
+      setError(errorMessage(err, "Upload failed."));
     } finally {
       setBusy(false);
     }
@@ -75,12 +77,11 @@ export default function SampleImages({
     const previous = images;
     setImages((list) => list.filter((i) => i.id !== image.id));
     try {
-      const res = await fetch(`/api/images/${image.id}`, { method: "DELETE" });
-      if (!res.ok && res.status !== 404) throw new Error(`HTTP ${res.status}`);
+      await deleteResource(`/api/images/${image.id}`);
       router.refresh();
     } catch (err) {
       setImages(previous);
-      setError(err instanceof Error ? err.message : "Could not delete that image.");
+      setError(errorMessage(err, "Could not delete that image."));
     }
   }
 
@@ -153,7 +154,7 @@ export default function SampleImages({
           <input
             ref={fileInput}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/avif"
+            accept={ACCEPTED_SAMPLE_MIME.join(",")}
             onChange={upload}
             className="hidden"
           />

@@ -3,7 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import Select from "./Select";
+import { errorMessage, fetchJson, sendJson } from "@/lib/api";
 import type { Prompt } from "@/lib/prompt";
+import { useArmed } from "@/lib/use-armed";
 
 interface Summary {
   mode: string;
@@ -17,7 +19,8 @@ interface Summary {
  *
  * Import reads the file in the browser and posts JSON, so the server never
  * needs multipart handling for what is a small text file. Replace is two-step
- * for the same reason delete is: it discards the whole collection.
+ * (see `useArmed`) for the same reason delete is: it discards the whole
+ * collection.
  */
 export default function ImportExport({
   onImported,
@@ -30,18 +33,14 @@ export default function ImportExport({
   const router = useRouter();
   const fileInput = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState<"merge" | "replace">("merge");
-  const [armed, setArmed] = useState(false);
+  const { armed, arm, disarm } = useArmed();
   const [busy, setBusy] = useState(false);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   function pickFile() {
-    if (mode === "replace" && !armed) {
-      setArmed(true);
-      window.setTimeout(() => setArmed(false), 4000);
-      return;
-    }
-    setArmed(false);
+    if (mode === "replace" && !armed) return arm();
+    disarm();
     fileInput.current?.click();
   }
 
@@ -56,21 +55,15 @@ export default function ImportExport({
     setSummary(null);
     try {
       const parsed: unknown = JSON.parse(await file.text());
-      const res = await fetch(`/api/prompts/import?mode=${mode}`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(parsed),
-      });
-      const data = (await res.json()) as Summary & { error?: string };
-      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
-
-      setSummary(data);
+      setSummary(
+        await fetchJson<Summary>(`/api/prompts/import?mode=${mode}`, sendJson("POST", parsed)),
+      );
       // Pull the merged collection back so the grid reflects it without a reload.
-      const fresh = (await (await fetch("/api/prompts")).json()) as { prompts: Prompt[] };
+      const fresh = await fetchJson<{ prompts: Prompt[] }>("/api/prompts");
       onImported(fresh.prompts);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not read that file.");
+      setError(errorMessage(err, "Could not read that file."));
     } finally {
       setBusy(false);
     }
@@ -112,7 +105,7 @@ export default function ImportExport({
               ]}
               onChange={(next) => {
                 setMode(next);
-                setArmed(false);
+                disarm();
               }}
               className="w-36"
             />

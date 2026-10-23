@@ -7,6 +7,7 @@ import {
   throttle,
   writePolicy,
 } from "@/lib/admin";
+import { errorResponse, readJson } from "@/lib/http";
 
 export const runtime = "nodejs";
 
@@ -19,14 +20,11 @@ async function clientKey(): Promise<string> {
 export async function POST(request: Request) {
   const policy = writePolicy();
   if (policy !== "gated") {
-    return Response.json(
-      {
-        error:
-          policy === "locked"
-            ? "No ADMIN_PASSPHRASE is set, so editing is disabled."
-            : "No passphrase is set — this collection is local and already editable.",
-      },
-      { status: 400 },
+    return errorResponse(
+      policy === "locked"
+        ? "No ADMIN_PASSPHRASE is set, so editing is disabled."
+        : "No passphrase is set — this collection is local and already editable.",
+      400,
     );
   }
 
@@ -39,16 +37,11 @@ export async function POST(request: Request) {
     );
   }
 
-  let passphrase = "";
-  try {
-    passphrase = String(((await request.json()) as { passphrase?: unknown }).passphrase ?? "");
-  } catch {
-    return Response.json({ error: "Expected a JSON body." }, { status: 400 });
-  }
+  const body = await readJson(request);
+  if (body instanceof Response) return body;
+  const passphrase = String((body as { passphrase?: unknown } | null)?.passphrase ?? "");
 
-  if (!checkPassphrase(passphrase)) {
-    return Response.json({ error: "That passphrase is not right." }, { status: 401 });
-  }
+  if (!checkPassphrase(passphrase)) return errorResponse("That passphrase is not right.", 401);
 
   const { token, maxAge } = createSessionToken();
   (await cookies()).set(COOKIE_NAME, token, {
