@@ -39,6 +39,10 @@ function toolsLine(models: AiTool[]): string {
 /**
  * One prompt in the grid.
  *
+ * The whole card opens the prompt: the title's link is stretched over it (its
+ * ::after fills the card), and only the tags and the action row sit above it —
+ * people tap the preview text as often as the title, especially on a phone.
+ *
  * Every card has the same cover — the first sample, or the prompt's accent
  * gradient until one exists — so a row with one sample does not stretch its
  * neighbours into tall empty boxes. Who the prompt is for and what it makes sit
@@ -50,10 +54,9 @@ export default function PromptCard({ prompt, onChange, onTagClick, canEdit, imag
   const href = `/prompts/${prompt.id}`;
 
   return (
-    <article className="card group flex flex-col overflow-hidden transition duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:shadow-(--shadow-lifted)">
-      {/* Out of the tab order and hidden from screen readers: the title below is
-          the same link, and one stop per card is enough. */}
-      <Link href={href} tabIndex={-1} aria-hidden className="relative block aspect-video overflow-hidden">
+    <article className="card group relative flex flex-col overflow-hidden transition duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:shadow-(--shadow-lifted)">
+      {/* Decorative: the stretched title link covers it. */}
+      <div aria-hidden className="relative aspect-video overflow-hidden">
         {image ? (
           // Plain img: user uploads, on an origin the image optimiser is not
           // configured for.
@@ -76,12 +79,15 @@ export default function PromptCard({ prompt, onChange, onTagClick, canEdit, imag
           )}
           <span className="cover-chip">{CATEGORY_LABELS[prompt.category]}</span>
         </div>
-      </Link>
+      </div>
 
       <div className="flex flex-1 flex-col gap-3 p-4 sm:p-5">
         <div className="min-w-0">
           <h2 className="text-[0.9375rem] font-medium leading-snug">
-            <Link href={href} className="transition hover:text-white" title={prompt.title}>
+            <Link
+              href={href}
+              className="transition group-hover:text-white after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:rounded-(--radius-lg) focus-visible:after:outline-2 focus-visible:after:outline-(--accent)"
+            >
               {prompt.title}
             </Link>
           </h2>
@@ -95,7 +101,7 @@ export default function PromptCard({ prompt, onChange, onTagClick, canEdit, imag
         </p>
 
         {prompt.tags.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="relative z-10 flex flex-wrap items-center gap-1.5">
             {prompt.tags.slice(0, TAGS_SHOWN).map((tag) =>
               onTagClick ? (
                 <button key={tag} type="button" onClick={() => onTagClick(tag)} className={TAG}>
@@ -113,7 +119,7 @@ export default function PromptCard({ prompt, onChange, onTagClick, canEdit, imag
           </div>
         )}
 
-        <div className="mt-auto flex items-center justify-between gap-3 border-t border-line pt-3">
+        <div className="relative z-10 mt-auto flex items-center justify-between gap-3 border-t border-line pt-3">
           <span
             className="min-w-0 truncate text-xs text-subtle"
             title={

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ImportExport from "./ImportExport";
 import PromptCard from "./PromptCard";
 import Select from "./Select";
@@ -109,6 +109,21 @@ export default function Library({
   }, [prompts, filter]);
   const allCount = [...categoryCounts.values()].reduce((a, b) => a + b, 0);
 
+  // "/" jumps to search, the convention most sites with a search box share —
+  // unless the visitor is already typing somewhere.
+  const searchRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "/" || event.ctrlKey || event.metaKey || event.altKey) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("input, textarea, select, [contenteditable='true']")) return;
+      event.preventDefault();
+      searchRef.current?.focus();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   // Keep the URL shareable without a navigation — this is view state, not a page.
   useEffect(() => {
     const query = filterToQuery(filter);
@@ -182,13 +197,25 @@ export default function Library({
               <path d="m14 14 3.5 3.5" strokeLinecap="round" />
             </svg>
             <input
+              ref={searchRef}
               type="search"
               value={filter.q ?? ""}
               onChange={(e) => set({ q: e.target.value })}
               placeholder="Search saree, anime, logo…"
               aria-label="Search prompts"
-              className="field pl-10"
+              aria-keyshortcuts="/"
+              className="peer field pl-10 sm:pr-10"
             />
+            {/* The shortcut, shown where a keyboard is likely and only while
+                the box is empty and unfocused. */}
+            {!filter.q && (
+              <kbd
+                aria-hidden
+                className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md border border-line px-1.5 py-0.5 font-mono text-[0.6875rem] leading-none text-subtle sm:block sm:peer-focus:hidden"
+              >
+                /
+              </kbd>
+            )}
           </div>
 
           <div className="flex items-center gap-2.5">

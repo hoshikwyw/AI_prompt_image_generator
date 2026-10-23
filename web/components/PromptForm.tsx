@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Select from "./Select";
 import { ApiError, errorMessage, fetchJson, sendJson } from "@/lib/api";
 import {
@@ -52,6 +52,23 @@ export default function PromptForm({ prompt }: Props) {
   const [errors, setErrors] = useState<Errors>({});
   const [submitting, setSubmitting] = useState(false);
 
+  // Unsaved-changes guard. A long prompt is real work, and closing the tab or
+  // reloading would lose it silently. The snapshot is taken once, on mount.
+  const [snapshot] = useState(() => JSON.stringify([draft, tagsText]));
+  const saved = useRef(false);
+  const dirty = JSON.stringify([draft, tagsText]) !== snapshot;
+  useEffect(() => {
+    if (!dirty) return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (saved.current) return;
+      event.preventDefault();
+      // Older browsers only show the prompt when returnValue is set.
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty]);
+
   const set = <K extends keyof PromptDraft>(key: K, value: PromptDraft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
 
@@ -85,11 +102,12 @@ export default function PromptForm({ prompt }: Props) {
     setSubmitting(true);
     setErrors({});
     try {
-      const saved = await fetchJson<Prompt>(
+      const result = await fetchJson<Prompt>(
         editing ? `/api/prompts/${prompt!.id}` : "/api/prompts",
         sendJson(editing ? "PATCH" : "POST", candidate),
       );
-      router.push(`/prompts/${saved.id}`);
+      saved.current = true;
+      router.push(`/prompts/${result.id}`);
       // The library and detail pages read the file per request; refresh drops
       // the client-side route cache so the change is visible immediately.
       router.refresh();
@@ -109,7 +127,17 @@ export default function PromptForm({ prompt }: Props) {
     errors[key] ? <p className="mt-1 text-xs text-red-400">{errors[key]}</p> : null;
 
   return (
-    <form onSubmit={submit} className="max-w-2xl space-y-6 pb-24 sm:pb-0">
+    <form
+      onSubmit={submit}
+      // Ctrl/⌘+Enter saves from any field, the textarea included.
+      onKeyDown={(event) => {
+        if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+          event.preventDefault();
+          event.currentTarget.requestSubmit();
+        }
+      }}
+      className="max-w-2xl space-y-6 pb-24 sm:pb-0"
+    >
       <div>
         <label htmlFor="title" className="mb-1.5 block text-sm font-medium">
           Title
@@ -316,6 +344,10 @@ export default function PromptForm({ prompt }: Props) {
         >
           Cancel
         </Link>
+        <span className="ml-auto hidden text-xs text-subtle sm:inline">
+          <kbd className="font-mono">Ctrl</kbd>/<kbd className="font-mono">⌘</kbd> +{" "}
+          <kbd className="font-mono">Enter</kbd> to save
+        </span>
       </div>
     </form>
   );

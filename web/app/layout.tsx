@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Toaster from "@/components/Toaster";
 import { isAdmin } from "@/lib/admin";
+import { SITE_URL } from "@/lib/site";
 import { activeBackend } from "@/lib/store";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -12,19 +13,9 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 const description =
   "Ready-to-copy AI image prompts for ChatGPT, Gemini, Midjourney and more — for women, men and couples.";
 
-/**
- * Link previews need absolute URLs, and a local sample image's URL is a path.
- * SITE_URL when set; on Vercel, the production domain it provides; otherwise
- * the dev server.
- */
-const siteUrl =
-  process.env.SITE_URL ||
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : "http://localhost:3000");
-
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  // Link previews need absolute URLs, and a local sample image's URL is a path.
+  metadataBase: new URL(SITE_URL),
   // Pages set just their own name; the template adds the site's.
   title: { default: "Promptbook — AI image prompts", template: "%s — Promptbook" },
   description,
