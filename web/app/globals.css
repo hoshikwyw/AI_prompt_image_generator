@@ -19,6 +19,18 @@
   --color-line-strong: var(--border-strong);
   --color-accent: var(--accent);
 
+  /* Status colours, as tokens rather than Tailwind shades: a red-300 that reads
+     well on near-black is unreadable on white. */
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-border: var(--danger-border);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-border: var(--success-border);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-border: var(--warning-border);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
@@ -30,15 +42,42 @@
  * Everything below is layered on purpose.
  *
  * Unlayered CSS outranks *every* layered rule regardless of specificity, so a
- * bare `.btn` here would beat the `bg-amber-500/10` a caller puts beside it and
+ * bare `.btn` here would beat the `bg-warning-soft` a caller puts beside it and
  * quietly kill the active states. Sitting in `components` puts these rules
  * before Tailwind's `utilities` layer, which is what lets a utility win.
  */
 @layer base {
+  /*
+   * Themes. Dark is the base; light applies when the system asks for it, unless
+   * the visitor picked dark, or whenever they picked light. The choice is a
+   * `data-theme` attribute on <html>, set server-side from a cookie (see
+   * ThemeToggle), so the first paint is already right — no flash, no script.
+   *
+   * CSS cannot share one block between a media query and an attribute
+   * selector, so the light values appear twice below. Change both together.
+   */
   :root {
     /* Tells the browser the page is dark, so anything it still draws itself —
        scrollbars, autofill, date pickers — comes out dark to match. */
     color-scheme: dark;
+
+    --danger: #fca5a5;
+    --danger-soft: rgb(239 68 68 / 0.1);
+    --danger-border: rgb(220 38 38 / 0.6);
+    --success: #6ee7b7;
+    --success-soft: rgb(16 185 129 / 0.1);
+    --success-border: rgb(5 150 105 / 0.6);
+    --warning: #fcd34d;
+    --warning-soft: rgb(245 158 11 / 0.1);
+    --warning-border: rgb(217 119 6 / 0.6);
+
+    --mark-bg: rgb(251 191 36 / 0.14);
+    --mark-fg: #fcd34d;
+    --primary-hover: #ffffff;
+    --hover-overlay: rgb(255 255 255 / 0.06);
+    --backdrop: rgb(0 0 0 / 0.7);
+    --glow-a: #8b9dff14;
+    --glow-b: #ff8bc714;
 
     --background: #0a0c12;
     --surface: #121620;
@@ -66,6 +105,75 @@
     --shadow-lifted: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px -16px rgb(0 0 0 / 0.75);
   }
 
+  /* Light — every text colour checked at 4.5:1 or better on all three surfaces. */
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      color-scheme: light;
+      --background: #f6f7fb;
+      --surface: #ffffff;
+      --surface-raised: #eef1f6;
+      --border: #e2e6ee;
+      --border-strong: #c9d0dc;
+      --foreground: #121620;
+      --muted: #4a5366;
+      --subtle: #5f6880;
+      --accent: #4352c9;
+      --accent-soft: #4352c914;
+      --accent-border: #4352c94d;
+      --danger: #b91c1c;
+      --danger-soft: #fef2f2;
+      --danger-border: #fca5a5;
+      --success: #047857;
+      --success-soft: #ecfdf5;
+      --success-border: #6ee7b7;
+      --warning: #a14a07;
+      --warning-soft: #fffbeb;
+      --warning-border: #fcd34d;
+      --mark-bg: #fdecc8;
+      --mark-fg: #8a3a07;
+      --primary-hover: #000000;
+      --hover-overlay: rgb(15 23 42 / 0.05);
+      --backdrop: rgb(15 18 25 / 0.45);
+      --glow-a: #4352c90f;
+      --glow-b: #e0489a0d;
+      --shadow: 0 1px 2px rgb(16 24 40 / 0.06), 0 8px 24px -12px rgb(16 24 40 / 0.14);
+      --shadow-lifted: 0 1px 2px rgb(16 24 40 / 0.08), 0 16px 40px -16px rgb(16 24 40 / 0.22);
+    }
+  }
+
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --background: #f6f7fb;
+    --surface: #ffffff;
+    --surface-raised: #eef1f6;
+    --border: #e2e6ee;
+    --border-strong: #c9d0dc;
+    --foreground: #121620;
+    --muted: #4a5366;
+    --subtle: #5f6880;
+    --accent: #4352c9;
+    --accent-soft: #4352c914;
+    --accent-border: #4352c94d;
+    --danger: #b91c1c;
+    --danger-soft: #fef2f2;
+    --danger-border: #fca5a5;
+    --success: #047857;
+    --success-soft: #ecfdf5;
+    --success-border: #6ee7b7;
+    --warning: #a14a07;
+    --warning-soft: #fffbeb;
+    --warning-border: #fcd34d;
+    --mark-bg: #fdecc8;
+    --mark-fg: #8a3a07;
+    --primary-hover: #000000;
+    --hover-overlay: rgb(15 23 42 / 0.05);
+    --backdrop: rgb(15 18 25 / 0.45);
+    --glow-a: #4352c90f;
+    --glow-b: #e0489a0d;
+    --shadow: 0 1px 2px rgb(16 24 40 / 0.06), 0 8px 24px -12px rgb(16 24 40 / 0.14);
+    --shadow-lifted: 0 1px 2px rgb(16 24 40 / 0.08), 0 16px 40px -16px rgb(16 24 40 / 0.22);
+  }
+
   html {
     /* Stops iOS from inflating type in landscape. */
     -webkit-text-size-adjust: 100%;
@@ -88,8 +196,8 @@
     z-index: -1;
     pointer-events: none;
     background:
-      radial-gradient(60rem 30rem at 15% -10%, #8b9dff14, transparent 70%),
-      radial-gradient(45rem 25rem at 100% 0%, #ff8bc714, transparent 70%);
+      radial-gradient(60rem 30rem at 15% -10%, var(--glow-a), transparent 70%),
+      radial-gradient(45rem 25rem at 100% 0%, var(--glow-b), transparent 70%);
   }
 
   ::selection {
@@ -209,8 +317,8 @@
   }
 
   .btn-primary:hover:not(:disabled) {
-    background: #fff;
-    border-color: #fff;
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
   }
 
   .btn-ghost {
@@ -433,9 +541,9 @@
   /* A [placeholder] in a prompt — the part a reader should change. */
   mark.placeholder {
     border-radius: 0.3rem;
-    background: rgb(251 191 36 / 0.14);
+    background: var(--mark-bg);
     padding: 0 0.15rem;
-    color: #fcd34d;
+    color: var(--mark-fg);
   }
 
   /* A label laid over a card cover — photo or gradient alike. */
@@ -511,7 +619,7 @@
   }
 
   .modal::backdrop {
-    background: rgb(0 0 0 / 0.7);
+    background: var(--backdrop);
     backdrop-filter: blur(2px);
   }
 
@@ -618,7 +726,7 @@
   }
 
   .select-option[data-active="true"] {
-    background: rgb(255 255 255 / 0.06);
+    background: var(--hover-overlay);
     color: var(--foreground);
   }
 

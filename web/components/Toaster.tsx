@@ -36,7 +36,7 @@ export default function Toaster() {
       {message && (
         <p key={key} className="toast">
           <svg
-            className="h-4 w-4 shrink-0 text-emerald-400"
+            className="h-4 w-4 shrink-0 text-success"
             viewBox="0 0 16 16"
             fill="none"
             stroke="currentColor"

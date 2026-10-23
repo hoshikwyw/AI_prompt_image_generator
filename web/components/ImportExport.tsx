@@ -80,7 +80,7 @@ export default function ImportExport({ onImported }: { onImported: (prompts: Pro
           onClick={pickFile}
           disabled={busy}
           className={`btn btn-sm ${
-            armed ? "border-red-600/60 bg-red-500/10 text-red-300" : "text-muted"
+            armed ? "border-danger-border bg-danger-soft text-danger" : "text-muted"
           }`}
         >
           {busy ? "Importing…" : armed ? "Click again to replace all" : "Import"}
@@ -115,7 +115,7 @@ export default function ImportExport({ onImported }: { onImported: (prompts: Pro
           {summary.added} added, {summary.updated} updated
           {summary.skipped.length > 0 && (
             <>
-              , <span className="text-amber-300">{summary.skipped.length} skipped</span> (
+              , <span className="text-warning">{summary.skipped.length} skipped</span> (
               {summary.skipped
                 .slice(0, 3)
                 .map((s) => s.title)
@@ -126,7 +126,7 @@ export default function ImportExport({ onImported }: { onImported: (prompts: Pro
           .
         </p>
       )}
-      {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+      {error && <p className="mt-2 text-xs text-danger">{error}</p>}
     </div>
   );
 }

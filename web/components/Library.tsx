@@ -243,7 +243,7 @@ export default function Library({
                 title={`Show ${starLabel.toLowerCase()} only`}
                 className={`btn btn-icon shrink-0 ${
                   filter.favoritesOnly
-                    ? "border-amber-600/60 bg-amber-500/10 text-amber-300"
+                    ? "border-warning-border bg-warning-soft text-warning"
                     : "text-muted"
                 }`}
               >

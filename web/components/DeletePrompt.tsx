@@ -37,13 +37,13 @@ export default function DeletePrompt({ id, title }: { id: string; title: string 
         aria-label={armed ? `Confirm deleting ${title}` : `Delete ${title}`}
         className={`btn ${
           armed
-            ? "border-red-600/60 bg-red-500/10 text-red-300"
-            : "text-muted hover:border-red-900/70 hover:text-red-300"
+            ? "border-danger-border bg-danger-soft text-danger"
+            : "text-muted hover:border-danger-border hover:text-danger"
         }`}
       >
         {busy ? "Deleting…" : armed ? "Click again to delete" : "Delete"}
       </button>
-      {error && <span className="text-xs text-red-400">{error}</span>}
+      {error && <span className="text-xs text-danger">{error}</span>}
     </div>
   );
 }

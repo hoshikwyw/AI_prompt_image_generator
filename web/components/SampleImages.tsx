@@ -121,7 +121,7 @@ export default function SampleImages({
                   <button
                     type="button"
                     onClick={() => remove(image)}
-                    className="shrink-0 transition hover:text-red-300"
+                    className="shrink-0 transition hover:text-danger"
                     aria-label={`Delete ${image.caption || "this sample"}`}
                   >
                     Remove
@@ -161,7 +161,7 @@ export default function SampleImages({
         </div>
       )}
 
-      {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+      {error && <p className="mt-2 text-xs text-danger">{error}</p>}
       {images.length === 0 && canEdit && (
         <p className="mt-2 text-xs text-muted">
           No samples yet. Add one so the card shows what this prompt produces.

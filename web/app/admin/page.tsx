@@ -33,9 +33,9 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
       )}
 
       {policy === "locked" && (
-        <div className="rounded-[var(--radius-lg)] border border-amber-900/60 bg-amber-950/30 px-5 py-4 text-sm">
-          <p className="font-medium text-amber-200">Editing is disabled</p>
-          <p className="mt-1 text-amber-200/70">
+        <div className="rounded-[var(--radius-lg)] border border-warning-border bg-warning-soft px-5 py-4 text-sm">
+          <p className="font-medium text-warning">Editing is disabled</p>
+          <p className="mt-1 text-muted">
             This collection lives in Supabase, where anyone could reach it, and no{" "}
             <code className="font-mono">ADMIN_PASSPHRASE</code> is set. Set one in{" "}
             <code className="font-mono">.env.local</code> and restart to enable editing.

@@ -90,7 +90,7 @@ export default function PromptActions({
         onClick={copy}
         aria-label={`Copy the ${prompt.title} prompt`}
         className={`btn btn-sm ${
-          copyState === "copied" ? "border-emerald-600/60 bg-emerald-500/10 text-emerald-300" : ""
+          copyState === "copied" ? "border-success-border bg-success-soft text-success" : ""
         }`}
       >
         <svg
@@ -123,7 +123,7 @@ export default function PromptActions({
           aria-label={favorite ? "Remove from favourites" : "Add to favourites"}
           title={favorite ? "Remove from favourites" : "Add to favourites"}
           className={`btn btn-sm btn-icon ${
-            favorite ? "border-amber-600/60 bg-amber-500/10 text-amber-300" : "text-muted"
+            favorite ? "border-warning-border bg-warning-soft text-warning" : "text-muted"
           }`}
         >
           <span aria-hidden className="text-sm leading-none">

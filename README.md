@@ -31,6 +31,7 @@ first run with 17 example prompts covering every category and audience. To share
 |---|---|
 | **For whom** | Every prompt is for women, men, couples or everyone. Pick one and you see prompts aimed at you plus the ones that suit anyone. |
 | **Which AI** | Every prompt lists the tools it works in — ChatGPT, Gemini, Midjourney, Flux, Stable Diffusion, Leonardo, Ideogram, Grok, Copilot. Untagged prompts work anywhere. |
+| **Light and dark** | Follows the device's setting; the header button cycles System → Light → Dark, remembered in a cookie so pages load in the chosen theme with no flash. |
 | **Remembered** | The last "for whom" and AI a visitor picked are kept in a cookie, so the library opens already filtered next time. A link with its own filter wins. |
 | **Library** | 13 categories from portrait and fashion to logo and food. Search across title, text, notes, tags and AI; filter by category, tag or favourite; sort four ways. Filters live in the URL, so a view is a link you can send. |
 | **Copy** | One click puts the prompt text on the clipboard and counts the use — "most copied" is the honest measure of which prompts earn their place. |

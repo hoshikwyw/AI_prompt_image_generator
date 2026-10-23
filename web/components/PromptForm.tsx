@@ -124,7 +124,7 @@ export default function PromptForm({ prompt }: Props) {
   }
 
   const error = (key: string) =>
-    errors[key] ? <p className="mt-1 text-xs text-red-400">{errors[key]}</p> : null;
+    errors[key] ? <p className="mt-1 text-xs text-danger">{errors[key]}</p> : null;
 
   return (
     <form
@@ -318,7 +318,7 @@ export default function PromptForm({ prompt }: Props) {
               aria-pressed={draft.accent === accent}
               className={`h-10 w-16 rounded-xl bg-linear-to-r ${accent} ring-offset-2 ring-offset-background transition ${
                 draft.accent === accent
-                  ? "ring-2 ring-white/80"
+                  ? "ring-2 ring-foreground/70"
                   : "opacity-50 hover:opacity-100"
               }`}
             />
@@ -327,7 +327,7 @@ export default function PromptForm({ prompt }: Props) {
       </fieldset>
 
       {errors.form && (
-        <p className="rounded-xl border border-red-900 bg-red-950/40 px-4 py-3 text-sm text-red-300">
+        <p className="rounded-xl border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger">
           {errors.form}
         </p>
       )}

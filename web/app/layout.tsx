@@ -1,11 +1,14 @@
 import type { Metadata, Viewport } from "next";
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import ThemeToggle from "@/components/ThemeToggle";
 import Toaster from "@/components/Toaster";
 import { isAdmin } from "@/lib/admin";
 import { SITE_URL } from "@/lib/site";
 import { activeBackend } from "@/lib/store";
+import { THEME_COOKIE, readTheme } from "@/lib/theme";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -24,7 +27,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0c12",
+  // The browser bar follows the system theme. An explicit choice on the site
+  // cannot change it after load, which is a cosmetic mismatch at worst.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f6f7fb" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0c12" },
+  ],
   // No maximum-scale: pinch-zoom is an accessibility feature, not a bug.
   width: "device-width",
   initialScale: 1,
@@ -32,11 +40,14 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const admin = await isAdmin();
+  const theme = readTheme((await cookies()).get(THEME_COOKIE)?.value);
 
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      // Absent for "system", so the CSS falls back to prefers-color-scheme.
+      data-theme={theme === "system" ? undefined : theme}
     >
       <body className="flex min-h-full flex-col">
         {/* Sticky so the way back to the library is always one tap away on a
@@ -63,6 +74,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             </Link>
 
             <nav className="flex items-center gap-2">
+              <ThemeToggle initial={theme} />
               {admin ? (
                 <>
                   <Link href="/admin" className="btn btn-ghost btn-sm hidden sm:inline-flex">
