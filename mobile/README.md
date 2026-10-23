@@ -10,7 +10,14 @@ app without a rebuild. The cost is that it needs a connection.
 
 ## Setup
 
-Needs JDK 21 and the Android SDK (platform 36), with `ANDROID_HOME` set.
+Needs JDK 21 and the Android SDK (platform 36), with `ANDROID_HOME` set — or both paths in
+`android/local.properties`, which is per-machine and git-ignored. Forward slashes avoid escaping:
+
+```properties
+sdk.dir=C:/Users/you/AppData/Local/Android/Sdk
+# Only if JAVA_HOME points at an older JDK: build with this one instead.
+java.home=C:/path/to/jdk-21
+```
 
 1. Deploy `web/` to Vercel first. The app has nothing to open until then.
 2. Put the site's URL in [`app.config.json`](app.config.json):

@@ -51,6 +51,18 @@ function run(commandLine, cwd) {
   }
 }
 
+/** A key from android/local.properties, or "" when the file or key is absent. */
+function readLocalProperty(key) {
+  try {
+    const text = readFileSync(path.join(android, "local.properties"), "utf8");
+    const line = text.split(/\r?\n/).find((l) => l.startsWith(`${key}=`));
+    // Properties files escape ":" and "\" as "\:" and "\\"; undo both.
+    return line ? line.slice(key.length + 1).trim().replace(/\\(.)/g, "$1") : "";
+  } catch {
+    return "";
+  }
+}
+
 console.log(`\nBuilding Promptbook for ${serverUrl}\n`);
 
 run("npm run sync", root);
@@ -59,7 +71,16 @@ run("npm run sync", root);
 // directory for a bare "gradlew.bat" — it answered "not recognized" when this
 // script first ran it — so the wrapper is never left for the shell to find.
 const gradlew = path.join(android, process.platform === "win32" ? "gradlew.bat" : "gradlew");
-run(`"${gradlew}" assembleDebug --console=plain`, android);
+
+// Capacitor 8 compiles with Java 21. A machine whose JAVA_HOME is older can
+// point just this build at a newer JDK with a `java.home=` line in
+// android/local.properties — the per-machine, git-ignored file that already
+// holds sdk.dir — instead of changing JAVA_HOME for everything else.
+const javaHome = readLocalProperty("java.home");
+const javaArg = javaHome ? ` "-Dorg.gradle.java.home=${javaHome}"` : "";
+if (javaHome) console.log(`Using the JDK at ${javaHome} (java.home in local.properties)\n`);
+
+run(`"${gradlew}" assembleDebug --console=plain${javaArg}`, android);
 
 const gradle = readFileSync(path.join(android, "app", "build.gradle"), "utf8");
 const version = /versionName\s*=?\s*"([^"]+)"/.exec(gradle)?.[1] ?? "dev";
