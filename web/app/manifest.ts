@@ -9,7 +9,8 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Promptbook",
     short_name: "Promptbook",
-    description: "Collect, tag and search the AI prompts that actually work.",
+    description:
+      "Ready-to-copy AI image prompts for ChatGPT, Gemini, Midjourney and more — for women, men and couples.",
     start_url: "/",
     display: "standalone",
     background_color: "#0a0c12",

@@ -9,8 +9,9 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Promptbook — AI prompt collection",
-  description: "Collect, tag and search the AI prompts that actually work.",
+  title: "Promptbook — AI image prompts",
+  description:
+    "Ready-to-copy AI image prompts for ChatGPT, Gemini, Midjourney and more — for women, men and couples.",
 };
 
 export const viewport: Viewport = {

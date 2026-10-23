@@ -137,7 +137,7 @@ export default function PromptForm({ prompt }: Props) {
           value={draft.title}
           onChange={(e) => set("title", e.target.value)}
           maxLength={MAX.title}
-          placeholder="Renaissance Oil"
+          placeholder="Golden Hour Saree"
           className={field}
         />
         {error("title")}
@@ -152,7 +152,7 @@ export default function PromptForm({ prompt }: Props) {
           value={draft.summary}
           onChange={(e) => set("summary", e.target.value)}
           maxLength={MAX.summary}
-          placeholder="17th-century Dutch master treatment"
+          placeholder="Flowing silk saree in warm sunset light"
           className={field}
         />
       </div>
@@ -172,13 +172,15 @@ export default function PromptForm({ prompt }: Props) {
           onChange={(e) => set("body", e.target.value)}
           maxLength={MAX.body}
           rows={8}
-          placeholder="Restyle the person in this photo as…"
+          placeholder="Using the woman in this photo, keep her face exactly the same and…"
           className={`${field} resize-y font-mono leading-relaxed`}
         />
         {error("body")}
         <p className="mt-1.5 text-xs text-muted">
-          Write the transformation, not the scene — &ldquo;restyle the person in this photo as X,
-          keeping their facial features&rdquo; beats &ldquo;a portrait in style X&rdquo;.
+          Name the subject, style, setting, lighting and camera. If it edits the reader&rsquo;s own
+          photo, say what to keep &mdash; &ldquo;keep her face exactly the same&rdquo; &mdash; and
+          put &ldquo;attach your photo&rdquo; in the notes. Mark the parts to change with
+          [brackets].
         </p>
       </div>
 
@@ -261,7 +263,7 @@ export default function PromptForm({ prompt }: Props) {
           id="tags"
           value={tagsText}
           onChange={(e) => setTagsText(e.target.value)}
-          placeholder="portrait, restyle, likeness-hard"
+          placeholder="saree, traditional, photo-edit"
           className={field}
         />
         {parsedTags.length > 0 && (

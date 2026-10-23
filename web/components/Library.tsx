@@ -119,10 +119,10 @@ export default function Library({ prompts: initial, initialFilter, canEdit, cove
       <header className="mb-7 flex flex-col gap-4 sm:mb-9 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
-            Prompt library
+            Image prompts
           </h1>
           <p className="mt-2 max-w-xl text-sm text-muted sm:text-base">
-            Collect prompts that work, tag them, and copy one when you need it.
+            Pick who it&rsquo;s for and the AI you use, copy a prompt, and paste it in.
           </p>
         </div>
         <ImportExport onImported={setPrompts} canImport={canEdit} />

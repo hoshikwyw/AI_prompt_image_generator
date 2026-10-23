@@ -269,3 +269,74 @@ the endpoint suite should be re-run against the live project before trusting it.
 Phase 4: run `npm run supabase:check` against the real project and re-verify the Supabase paths.
 Then wire `/api/generate` to collected prompts rather than the old seed file, so a key turning up
 makes the collection runnable.
+
+---
+
+## Phase 4 — Any image, any audience, any AI · 2026-10-23
+
+**Goal:** stop being a portrait-restyle library waiting for an API key, and become a prompt
+collection for any kind of image, where a visitor picks who it is for and which AI they use, then
+copies and pastes.
+
+### Context that shaped the design
+
+The plan to wire generation back in (Phase 3's "Next") was dropped. The app will never call an AI:
+visitors bring their own ChatGPT, Gemini or Midjourney, which removes provider keys, per-image
+cost and quota from the picture entirely. What visitors need instead is to find prompts that fit
+*them* — a woman looking for a saree portrait should not wade through menswear — and that work in
+the tool they have open.
+
+### Delivered
+
+| Change | Where |
+|---|---|
+| Generation code, `probe/` and `@google/genai` removed | `lib/providers/`, `lib/jobs.ts`, `lib/image.ts`, `/api/generate`, `/api/jobs`, `/api/image` |
+| 13 categories for any image (portrait … food) | `lib/prompt.ts` |
+| `audience` (any / female / male / couple) and `models` (a fixed list of AI tools) replace free-text `targetModel` | `lib/prompt.ts`, both stores, the form, card and detail page |
+| Migration: new columns, backfills, check constraints | `supabase/migrations/20261023000000_audience_and_models.sql` |
+| "For" switch and AI dropdown, in the URL as `for=` and `ai=` | `components/Library.tsx` |
+| Last choice remembered in a cookie, applied server-side | `PREFS_COOKIE` in `lib/prompt.ts`, `app/page.tsx` |
+| 17 seed prompts across every category and audience | `lib/seed.ts` |
+
+### Decisions
+
+- **Filtering for an audience includes "any".** A prompt for everyone suits a woman too, so
+  `for=female` shows female and any. Filtering *for* "any" is not offered — it would only hide the
+  prompts aimed at the visitor.
+- **Same rule for AI tools.** An untagged prompt works anywhere, so `ai=gemini` shows Gemini-tagged
+  and untagged prompts.
+- **Tools are a fixed list, not free text.** Free text made "gemini", "Gemini 3" and
+  "nano-banana" three different filters. The list is mirrored by a check constraint, so adding a
+  tool means a migration — the same arrangement categories already had.
+- **Old data upgrades rather than breaks.** Legacy categories map onto the new ones, and a
+  free-text `targetModel` maps onto `models` by pattern, in three places that agree: the
+  migration's backfill, `validateDraft` (so old export files import cleanly) and
+  `upgradeStoredPrompt` (so an old local collection reads cleanly and is rewritten on its next
+  change).
+- **`target_model` is kept, unused, for one deploy.** Dropping it in the same migration would break
+  the previous deploy between running the SQL and shipping the code.
+- **A cookie, not local storage, for the remembered choice.** The library is server-rendered;
+  with a cookie it arrives already filtered instead of flashing the whole collection and then
+  narrowing. Only clicks write it — opening someone's shared link never overwrites your choice.
+
+### Verification
+
+Build, TypeScript and eslint clean (the nine `no-explicit-any` errors left with the provider
+files). Against a production server on the disk backend:
+
+| Case | Result |
+|---|---|
+| Collection file in the old shape | read as new categories, audience `any`, models from `targetModel`; rewritten on next write |
+| Unknown category / audience / tools on create | coerced to `other` / `any` / dropped |
+| PATCH of one field | other new fields untouched |
+| Import of an old export | categories and models mapped |
+| `for=female`, `for=male&ai=gemini`, junk values | correct subsets; junk shows everything |
+| Cookie only · cookie plus `?for=male` · junk cookie | pre-filtered · link wins · everything |
+| Library and form at 520px and desktop | screenshots checked |
+
+**Not verified against a live Supabase project.** The migration and the Supabase store changes
+have not run against Postgres; `npm run supabase:check` now also checks the new columns.
+
+### Next
+
+Run the migration on the production project, then deploy. Once live, drop `target_model`.

@@ -1,8 +1,9 @@
 # Promptbook
 
-A collection of AI prompts. Write them down, tag them, find them again, copy one when you need it.
+Ready-to-copy AI image prompts, for any kind of picture. Visitors pick who it is for (women, men,
+couples) and the AI they use (ChatGPT, Gemini, Midjourney…), copy a prompt, and paste it in.
 
-The app never runs a prompt itself: visitors copy one and paste it into whichever AI they use.
+The app never runs a prompt itself, so it needs no AI keys and costs nothing per image.
 It started as an image generator; that code has since been removed. See [HISTORY.md](HISTORY.md)
 for what each phase delivered and why.
 
@@ -21,14 +22,17 @@ npm run dev
 ```
 
 No keys, no database, no setup. The collection lives in `web/.data/collection.json`, seeded on
-first run with the six styles Phase 1 shipped with. To share it instead, see
+first run with 17 example prompts covering every category and audience. To share it instead, see
 [Going shared](#going-shared).
 
 ## What it does
 
 | | |
 |---|---|
-| **Library** | Search across title, text, notes and tags; filter by category, tag or favourite; sort four ways. Filters live in the URL, so a view is a link you can send. |
+| **For whom** | Every prompt is for women, men, couples or everyone. Pick one and you see prompts aimed at you plus the ones that suit anyone. |
+| **Which AI** | Every prompt lists the tools it works in — ChatGPT, Gemini, Midjourney, Flux, Stable Diffusion, Leonardo, Ideogram, Grok, Copilot. Untagged prompts work anywhere. |
+| **Remembered** | The last "for whom" and AI a visitor picked are kept in a cookie, so the library opens already filtered next time. A link with its own filter wins. |
+| **Library** | 13 categories from portrait and fashion to logo and food. Search across title, text, notes, tags and AI; filter by category, tag or favourite; sort four ways. Filters live in the URL, so a view is a link you can send. |
 | **Copy** | One click puts the prompt text on the clipboard and counts the use — "most copied" is the honest measure of which prompts earn their place. |
 | **Edit** | Add, edit and delete from the browser. Renaming keeps the id, so a link you saved keeps working. |
 | **Samples** | Attach images showing what a prompt produced. The first becomes the card's tile. |
@@ -37,13 +41,16 @@ first run with the six styles Phase 1 shipped with. To share it instead, see
 
 ## Writing prompts
 
-Write the **transformation**, not the scene:
+There are two kinds, and they read differently:
 
-- ✅ "Restyle the person in this photo as X, keeping their facial features"
-- ❌ "a portrait of a man in style X" — makes the model ignore the upload and invent a stranger
+- **Photo edits** — the reader attaches their own picture (ChatGPT, Gemini). Say what to keep:
+  ✅ "Using the woman in this photo, keep her face exactly the same and…". Leaving it out makes
+  the model ignore the upload and invent a stranger.
+- **Text only** — the prompt describes the whole image (Midjourney, Flux, Stable Diffusion). Name
+  the subject, style, setting, lighting and camera; Midjourney flags such as `--ar 2:3` go last.
 
-Use **notes** for what the prompt needs and what it gets wrong. That is the part you forget, and
-the part that saves you the second time.
+Mark the parts a reader should change with `[brackets]`. Use **notes** for what the prompt needs
+("attach your photo") and what it gets wrong — that is what saves the reader a second try.
 
 ## Data
 
@@ -91,6 +98,11 @@ prompts and refuse every write, and the footer will say so.
 
 Set `ADMIN_PASSPHRASE` too. On a shared collection, writes are refused outright without one, so
 you would not be able to edit anything through the deployed site.
+
+**Upgrading a deployment from before audiences and AI tools?** Run
+`supabase/migrations/20261023000000_audience_and_models.sql` in the Supabase SQL Editor *before*
+deploying — the new code reads columns that migration adds. See
+[supabase/README.md](supabase/README.md#apply-it).
 
 Three things to know about the free tier specifically:
 
