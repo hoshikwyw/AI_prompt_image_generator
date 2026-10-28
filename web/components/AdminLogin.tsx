@@ -39,14 +39,25 @@ export default function AdminLogin({ next }: { next: string }) {
           id="passphrase"
           type="password"
           value={passphrase}
-          onChange={(e) => setPassphrase(e.target.value)}
+          onChange={(e) => {
+            setPassphrase(e.target.value);
+            setError(null);
+          }}
           autoComplete="current-password"
           autoFocus
+          // Marked like any field with an error (red border, announced with
+          // the message), and cleared as soon as the passphrase is retyped.
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? "passphrase-error" : undefined}
           className="field"
         />
       </div>
 
-      {error && <p className="text-sm text-danger">{error}</p>}
+      {error && (
+        <p id="passphrase-error" role="alert" className="text-sm text-danger">
+          {error}
+        </p>
+      )}
 
       <button
         type="submit"
