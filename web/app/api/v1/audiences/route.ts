@@ -1,6 +1,7 @@
 import { CACHE, apiJson, preflight } from "@/lib/public-api";
 import { AUDIENCES, AUDIENCE_FILTERS, AUDIENCE_LABELS, type AudienceFilter } from "@/lib/prompt";
 import { listPrompts } from "@/lib/store";
+import { limitApiRequest } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -9,7 +10,10 @@ export const runtime = "nodejs";
  * exactly that audience; `filterable` says whether `?for=` accepts it.
  * "any" is not filterable: those prompts already appear under every choice.
  */
-export async function GET() {
+export async function GET(request: Request) {
+  const limited = await limitApiRequest(request, "audiences");
+  if (limited) return limited;
+
   const prompts = await listPrompts();
   return apiJson(
     {

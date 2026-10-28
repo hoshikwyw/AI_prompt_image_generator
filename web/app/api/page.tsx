@@ -289,6 +289,11 @@ export default async function ApiDocsPage() {
               may be blocked.
             </li>
             <li>
+              <strong>Privacy:</strong> your IP address is used only to count requests per minute and
+              is kept for at most two minutes. Daily totals record which endpoint was called, nothing
+              about who called it.
+            </li>
+            <li>
               <strong>v1 stays stable.</strong> Fields may be added, but none are renamed or removed;
               breaking changes would come as <C>/api/v2</C>, with notice here.
             </li>

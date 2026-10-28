@@ -1,11 +1,15 @@
 import { LICENCE } from "@/lib/openapi";
 import { CACHE, apiJson, preflight } from "@/lib/public-api";
+import { limitApiRequest } from "@/lib/rate-limit";
 
 /**
  * GET /api/v1 — what this API offers, for anyone who opens the base URL. Full
  * documentation lives at /api.
  */
-export function GET(request: Request) {
+export async function GET(request: Request) {
+  const limited = await limitApiRequest(request, "index");
+  if (limited) return limited;
+
   const { origin } = new URL(request.url);
   const base = `${origin}/api/v1`;
   return apiJson(

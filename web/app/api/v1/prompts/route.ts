@@ -8,6 +8,7 @@ import {
   toPublicPrompt,
 } from "@/lib/public-api";
 import { listImages, listPrompts } from "@/lib/store";
+import { limitApiRequest } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -21,6 +22,9 @@ export const runtime = "nodejs";
  * that suit anyone — the same ranking the site uses.
  */
 export async function GET(request: Request) {
+  const limited = await limitApiRequest(request, "prompts");
+  if (limited) return limited;
+
   const url = new URL(request.url);
   const filter = readFilter(url.searchParams);
   if (filter instanceof Response) return filter;

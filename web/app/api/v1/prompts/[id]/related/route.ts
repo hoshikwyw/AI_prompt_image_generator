@@ -8,6 +8,7 @@ import {
 } from "@/lib/public-api";
 import { relatedPrompts } from "@/lib/prompt";
 import { getPrompt, listImages, listPrompts } from "@/lib/store";
+import { limitApiRequest } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -16,6 +17,9 @@ export const runtime = "nodejs";
  * suit the same people, same category first. The site's own suggestions.
  */
 export async function GET(request: Request, ctx: RouteContext<"/api/v1/prompts/[id]/related">) {
+  const limited = await limitApiRequest(request, "related");
+  if (limited) return limited;
+
   const { id } = await ctx.params;
   const url = new URL(request.url);
   const paging = readPaging(url.searchParams, { fallback: 4, max: 12 });

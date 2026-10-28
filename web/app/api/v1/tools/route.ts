@@ -1,6 +1,7 @@
 import { CACHE, apiJson, preflight } from "@/lib/public-api";
 import { AI_TOOLS, AI_TOOL_LABELS } from "@/lib/prompt";
 import { listPrompts } from "@/lib/store";
+import { limitApiRequest } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -9,7 +10,10 @@ export const runtime = "nodejs";
  * prompts tagged with that tool; `meta.untagged` is prompts tagged with none,
  * which work anywhere and are included by every `?ai=` filter.
  */
-export async function GET() {
+export async function GET(request: Request) {
+  const limited = await limitApiRequest(request, "tools");
+  if (limited) return limited;
+
   const prompts = await listPrompts();
   return apiJson(
     {

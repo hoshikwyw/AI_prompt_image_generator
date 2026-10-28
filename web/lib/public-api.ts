@@ -56,8 +56,13 @@ export const CACHE = {
   serverError: "no-store",
 } as const;
 
-export function apiJson(body: unknown, cache: string, status = 200): Response {
-  return Response.json(body, { status, headers: { ...CORS, "Cache-Control": cache } });
+export function apiJson(
+  body: unknown,
+  cache: string,
+  status = 200,
+  headers: Record<string, string> = {},
+): Response {
+  return Response.json(body, { status, headers: { ...CORS, "Cache-Control": cache, ...headers } });
 }
 
 /** Every error has the same shape: `{ error: { code, message, ...details } }`. */
@@ -66,12 +71,12 @@ export function apiError(
   code: string,
   message: string,
   details?: Record<string, unknown>,
+  headers?: Record<string, string>,
 ): Response {
-  return apiJson(
-    { error: { code, message, ...details } },
-    status >= 500 ? CACHE.serverError : CACHE.clientError,
-    status,
-  );
+  // A 429 is about one caller, never the URL: cached, the CDN would turn
+  // everyone else away from it too.
+  const cache = status >= 500 || status === 429 ? CACHE.serverError : CACHE.clientError;
+  return apiJson({ error: { code, message, ...details } }, cache, status, headers);
 }
 
 export const notFound = (what: string) => apiError(404, "not_found", `No ${what} with that id.`);

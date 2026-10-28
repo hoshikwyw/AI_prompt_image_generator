@@ -1,0 +1,38 @@
+# Keeps the free Supabase project from pausing.
+#
+# Supabase pauses a free project after a week without database activity, and a
+# paused project takes the whole site and API down until someone restores it by
+# hand. Once a day this asks the API for one prompt, with a query string that
+# changes every run so the CDN cannot answer from cache: the request reaches the
+# database, which counts as activity.
+#
+# The site address comes from the repository variable PROMPTBOOK_URL (Settings →
+# Secrets and variables → Actions → Variables), falling back to the current
+# production URL.
+#
+# GitHub itself switches scheduled workflows off after 60 days without commits;
+# it emails a warning first, and one click re-enables it.
+name: Keep Supabase awake
+
+on:
+  schedule:
+    # Daily at 06:17 UTC — off the hour, when GitHub's scheduler is least busy.
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Query the database through the API
+        env:
+          SITE: ${{ vars.PROMPTBOOK_URL || 'https://ai-prompt-image-generator-five.vercel.app' }}
+        run: |
+          url="${SITE%/}/api/v1/prompts?limit=1&keepalive=$(date +%s)"
+          status=$(curl -sS -o response.json -w '%{http_code}' --retry 3 --retry-delay 20 "$url")
+          echo "GET $url -> $status"
+          head -c 300 response.json; echo
+          test "$status" = "200"

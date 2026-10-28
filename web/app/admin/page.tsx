@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AdminLogin from "@/components/AdminLogin";
 import AdminSignOut from "@/components/AdminSignOut";
+import ApiUsage from "@/components/ApiUsage";
 import BackLink from "@/components/BackLink";
 import { isAdmin, writePolicy } from "@/lib/admin";
 
@@ -62,6 +63,16 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
             <AdminLogin next={next} />
           </div>
         ))}
+
+      {/* Traffic is the maintainer's business, not a visitor's. */}
+      {signedIn && (
+        <section className="mt-10" aria-labelledby="api-usage-heading">
+          <h2 id="api-usage-heading" className="mb-3 text-base font-medium">
+            Public API
+          </h2>
+          <ApiUsage />
+        </section>
+      )}
     </div>
   );
 }
