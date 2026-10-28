@@ -1,5 +1,5 @@
 import { openApiSpec } from "@/lib/openapi";
-import { CACHE, apiJson, preflight } from "@/lib/public-api";
+import { CACHE, apiJson, preflight, apiRoute } from "@/lib/public-api";
 import { limitApiRequest } from "@/lib/rate-limit";
 
 /**
@@ -7,11 +7,11 @@ import { limitApiRequest } from "@/lib/rate-limit";
  * Feeds the interactive reference at /api/reference, and lets anyone generate
  * a typed client in their own language.
  */
-export async function GET(request: Request) {
+export const GET = apiRoute(async (request: Request) => {
   const limited = await limitApiRequest(request, "openapi");
   if (limited) return limited;
 
   return apiJson(openApiSpec(new URL(request.url).origin), CACHE.taxonomy);
-}
+});
 
 export const OPTIONS = preflight;

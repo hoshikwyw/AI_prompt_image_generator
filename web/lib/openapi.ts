@@ -36,7 +36,7 @@ const errors = {
 const FILTERS = ["q", "category", "for", "ai", "tag", "featured", "sort"].map(param);
 
 export function openApiSpec(origin: string) {
-  return {
+  const spec = {
     openapi: "3.1.0",
     info: {
       title: "Promptbook API",
@@ -291,28 +291,28 @@ export function openApiSpec(origin: string) {
           name: "for",
           in: "query",
           description:
-            "Who it is for. Also includes prompts that suit anyone, ranked after the exact matches. `audience` is accepted as an alias.",
+            "Who it is for. Also includes prompts that suit anyone, ranked after the exact matches. `audience` is accepted as an alias; giving both with different values is a `400`.",
           schema: { type: "string", enum: [...AUDIENCE_FILTERS] },
         },
         ai: {
           name: "ai",
           in: "query",
           description:
-            "The AI tool you will paste into. Also includes prompts tagged with no tool, ranked after. `tool` is accepted as an alias.",
+            "The AI tool you will paste into. Also includes prompts tagged with no tool, ranked after. `tool` is accepted as an alias; giving both with different values is a `400`.",
           schema: { type: "string", enum: [...AI_TOOLS] },
         },
         tag: {
           name: "tag",
           in: "query",
-          description: "A tag, as listed by `/tags`.",
+          description: "A tag, as listed by `/tags`. One that normalizes to nothing (such as `#`) is a `400`.",
           schema: { type: "string" },
           example: "photo-edit",
         },
         featured: {
           name: "featured",
           in: "query",
-          description: "`true` for editor's picks only.",
-          schema: { type: "string", enum: ["true", "false"] },
+          description: "`true` for editor's picks only. `favorites` (the site's name) is accepted as an alias.",
+          schema: { type: "string", enum: ["true", "false", "1", "0"] },
         },
         sort: {
           name: "sort",
@@ -342,6 +342,7 @@ export function openApiSpec(origin: string) {
             "Retry-After": { description: "Seconds to wait.", schema: { type: "integer" } },
           },
         },
+        ServerError: json(ref("Error"), "Something failed on our side (`server_error`); try again shortly."),
       },
       schemas: {
         Prompt: {
@@ -434,11 +435,12 @@ export function openApiSpec(origin: string) {
               properties: {
                 code: {
                   type: "string",
-                  enum: ["invalid_parameter", "not_found", "no_match", "rate_limited"],
+                  enum: ["invalid_parameter", "not_found", "no_match", "rate_limited", "server_error"],
                 },
                 message: { type: "string" },
                 param: { type: "string", description: "The parameter at fault, for `invalid_parameter`." },
                 allowed: { type: "array", items: { type: "string" }, description: "Values it accepts." },
+                retryAfter: { type: "integer", description: "Seconds to wait, for `rate_limited`." },
               },
             },
           },
@@ -446,6 +448,14 @@ export function openApiSpec(origin: string) {
       },
     },
   };
+
+  // Any route can fail on our side; every one answers in the same error shape.
+  for (const path of Object.values(spec.paths)) {
+    for (const operation of Object.values(path)) {
+      (operation.responses as Record<string, unknown>)["500"] = { $ref: "#/components/responses/ServerError" };
+    }
+  }
+  return spec;
 }
 
 function listOf(schema: string) {

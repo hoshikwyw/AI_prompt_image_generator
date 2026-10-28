@@ -1,11 +1,11 @@
-import { CACHE, apiJson, notFound, preflight, toPublicImage, toPublicPrompt } from "@/lib/public-api";
+import { CACHE, apiJson, notFound, preflight, toPublicImage, toPublicPrompt, apiRoute } from "@/lib/public-api";
 import { getPrompt, listImages } from "@/lib/store";
 import { limitApiRequest } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
 /** GET /api/v1/prompts/{id} — one prompt, with every sample image. */
-export async function GET(request: Request, ctx: RouteContext<"/api/v1/prompts/[id]">) {
+export const GET = apiRoute(async (request: Request, ctx: RouteContext<"/api/v1/prompts/[id]">) => {
   const limited = await limitApiRequest(request, "prompt");
   if (limited) return limited;
 
@@ -25,6 +25,6 @@ export async function GET(request: Request, ctx: RouteContext<"/api/v1/prompts/[
     },
     CACHE.content,
   );
-}
+});
 
 export const OPTIONS = preflight;

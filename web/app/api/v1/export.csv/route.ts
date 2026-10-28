@@ -1,5 +1,5 @@
 import { allPublicPrompts, toCsv } from "@/lib/dataset";
-import { CACHE, preflight } from "@/lib/public-api";
+import { CACHE, preflight, apiRoute } from "@/lib/public-api";
 import { limitApiRequest } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -9,7 +9,7 @@ export const runtime = "nodejs";
  * (placeholders, tools, tags) are joined with " | "; `image` is the first
  * sample's URL. Cached for an hour.
  */
-export async function GET(request: Request) {
+export const GET = apiRoute(async (request: Request) => {
   const limited = await limitApiRequest(request, "export");
   if (limited) return limited;
 
@@ -22,6 +22,6 @@ export async function GET(request: Request) {
       "Access-Control-Allow-Origin": "*",
     },
   });
-}
+});
 
 export const OPTIONS = preflight;

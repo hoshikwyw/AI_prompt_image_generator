@@ -67,7 +67,9 @@ export default async function PromptPage({ params }: PageProps<"/prompts/[id]">)
   // before copying, so they lead the page as links to more of the same.
   const facts: Array<{ label: string; href: string }> = [
     prompt.audience === "any"
-      ? { label: "For everyone", href: "/" }
+      ? // Explicitly everyone: a bare "/" opens on the visitor's saved choice,
+        // which would show women's prompts under a "For everyone" link.
+        { label: "For everyone", href: "/?for=all" }
       : {
           label: `For ${AUDIENCE_LABELS[prompt.audience].toLowerCase()}`,
           href: libraryLink({ audience: prompt.audience }),
@@ -75,7 +77,7 @@ export default async function PromptPage({ params }: PageProps<"/prompts/[id]">)
     { label: CATEGORY_LABELS[prompt.category], href: libraryLink({ category: prompt.category }) },
     ...(prompt.models.length
       ? prompt.models.map((m) => ({ label: AI_TOOL_LABELS[m], href: libraryLink({ model: m }) }))
-      : [{ label: "Any AI", href: "/" }]),
+      : [{ label: "Any AI", href: "/?ai=" }]),
   ];
 
   const meta: Array<[string, string]> = [

@@ -445,7 +445,9 @@ export function filterPrompts(prompts: Prompt[], filter: PromptFilter = {}): Pro
   const rank = (p: Prompt) =>
     (audience && p.audience !== audience ? 2 : 0) + (model && !p.models.includes(model) ? 1 : 0);
 
-  return out.sort((a, b) => rank(a) - rank(b) || sort(a, b));
+  // The id breaks ties, so prompts with the same title or timestamp — a whole
+  // import shares one — keep one order, and API pages never repeat or skip one.
+  return out.sort((a, b) => rank(a) - rank(b) || sort(a, b) || a.id.localeCompare(b.id));
 }
 
 /**

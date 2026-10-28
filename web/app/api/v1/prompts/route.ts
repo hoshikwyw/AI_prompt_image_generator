@@ -6,6 +6,7 @@ import {
   readFilter,
   readPaging,
   toPublicPrompt,
+  apiRoute,
 } from "@/lib/public-api";
 import { listImages, listPrompts } from "@/lib/store";
 import { limitApiRequest } from "@/lib/rate-limit";
@@ -21,7 +22,7 @@ export const runtime = "nodejs";
  * With `for` or `ai`, prompts aimed at that choice come first, then the ones
  * that suit anyone — the same ranking the site uses.
  */
-export async function GET(request: Request) {
+export const GET = apiRoute(async (request: Request) => {
   const limited = await limitApiRequest(request, "prompts");
   if (limited) return limited;
 
@@ -47,6 +48,6 @@ export async function GET(request: Request) {
     },
     CACHE.content,
   );
-}
+});
 
 export const OPTIONS = preflight;

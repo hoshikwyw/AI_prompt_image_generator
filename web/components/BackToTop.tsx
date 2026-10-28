@@ -13,7 +13,13 @@ export default function BackToTop() {
   useEffect(() => {
     const onScroll = () => setShown(window.scrollY > window.innerHeight * 1.5);
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    // A page restored part-way down (back, reload) fires no scroll event until
+    // the visitor moves, so check once after the first paint too.
+    const frame = requestAnimationFrame(onScroll);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+    };
   }, []);
 
   function toTop() {

@@ -76,37 +76,75 @@ const today = (now: number) => new Date(now).toISOString().slice(0, 10);
  * minutes; the daily usage counts keep the endpoint name and nothing else.
  */
 export async function limitApiRequest(request: Request, endpoint: string): Promise<Response | null> {
-  if (!rateLimitConfigured()) return null;
-
-  const now = Date.now();
-  const minute = Math.floor(now / 60_000);
-  const key = `rl:${clientAddress(request)}:${minute}`;
-  const usage = `usage:${today(now)}`;
-
-  const results = await pipeline([
-    ["INCR", key],
-    ["EXPIRE", key, 120],
-    ["HINCRBY", usage, endpoint, 1],
-    ["EXPIRE", usage, USAGE_DAYS * 86_400],
-  ]);
-  if (!results) return null;
-
-  const count = Number(results[0]);
-  if (!Number.isFinite(count) || count <= RATE_LIMIT) return null;
-
-  const retryAfter = 60 - Math.floor((now % 60_000) / 1000);
+  const verdict = await checkRateLimit(request, endpoint);
+  if (!verdict) return null;
   return apiError(
     429,
     "rate_limited",
-    `Over ${RATE_LIMIT} requests a minute. Try again in ${retryAfter} seconds — and consider caching responses.`,
-    { retryAfter },
-    {
-      "Retry-After": String(retryAfter),
-      "RateLimit-Limit": String(RATE_LIMIT),
-      "RateLimit-Remaining": "0",
-      "RateLimit-Reset": String(retryAfter),
-    },
+    `Over ${RATE_LIMIT} requests a minute. Try again in ${verdict.retryAfter} seconds — and consider caching responses.`,
+    { retryAfter: verdict.retryAfter },
+    rateLimitHeaders(verdict),
   );
+}
+
+export interface RateLimited {
+  retryAfter: number;
+}
+
+export const rateLimitHeaders = ({ retryAfter }: RateLimited): Record<string, string> => ({
+  "Retry-After": String(retryAfter),
+  "RateLimit-Limit": String(RATE_LIMIT),
+  "RateLimit-Remaining": "0",
+  "RateLimit-Reset": String(retryAfter),
+});
+
+/**
+ * Addresses known to be over the limit, and until when — kept per server
+ * instance. Once an address has had its 429, its further requests that minute
+ * are turned away here without touching Upstash. Before this, every rejected
+ * request still cost four commands, so one runaway script could spend the free
+ * monthly allowance in minutes — after which limiting silently stopped.
+ */
+const blocked = new Map<string, number>();
+/** The day this instance last set the usage key's expiry; once a day is enough. */
+let usageExpirySetFor = "";
+
+/** Counts the request; returns how long to wait when it is over the limit. */
+export async function checkRateLimit(request: Request, endpoint: string): Promise<RateLimited | null> {
+  if (!rateLimitConfigured()) return null;
+
+  const now = Date.now();
+  const address = clientAddress(request);
+  const windowEnd = (Math.floor(now / 60_000) + 1) * 60_000;
+  const retryAfter = Math.ceil((windowEnd - now) / 1000);
+
+  const until = blocked.get(address);
+  if (until !== undefined && until > now) return { retryAfter };
+  if (blocked.size > 5_000) {
+    for (const [key, expiry] of blocked) if (expiry <= now) blocked.delete(key);
+  }
+
+  const key = `rl:${address}:${Math.floor(now / 60_000)}`;
+  const day = today(now);
+  const usage = `usage:${day}`;
+  const commands: Command[] = [
+    ["INCR", key],
+    ["HINCRBY", usage, endpoint, 1],
+  ];
+  if (usageExpirySetFor !== day) commands.push(["EXPIRE", usage, USAGE_DAYS * 86_400]);
+
+  const results = await pipeline(commands);
+  if (!results) return null;
+  if (commands.length === 3) usageExpirySetFor = day;
+
+  const count = Number(results[0]);
+  // The counter's expiry is set once, by the request that created it, rather
+  // than on every request — half the commands for every other call.
+  if (count === 1) await pipeline([["EXPIRE", key, 120]]);
+  if (!Number.isFinite(count) || count <= RATE_LIMIT) return null;
+
+  blocked.set(address, windowEnd);
+  return { retryAfter };
 }
 
 export interface UsageDay {

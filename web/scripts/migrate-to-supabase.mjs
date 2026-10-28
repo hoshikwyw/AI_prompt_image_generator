@@ -81,16 +81,33 @@ console.log(`\nMigrating ${prompts.length} prompt(s) and ${images.length} image(
 if (dryRun) console.log("Dry run — nothing will be written.\n");
 
 // --- what is already there --------------------------------------------------
-const { data: existing, error: readError } = await db.from("prompts").select("id, created_at");
+/**
+ * Every row of a read, a page at a time: Supabase answers at most 1000 rows a
+ * request, so a plain select missed the rest — they were then counted as new,
+ * lost their creation date, and kept their images out of a replace.
+ */
+async function readAll(query) {
+  const rows = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await query().range(from, from + 999);
+    if (error) return { data: null, error };
+    rows.push(...data);
+    if (data.length < 1000) return { data: rows, error: null };
+  }
+}
+
+const { data: existing, error: readError } = await readAll(() =>
+  db.from("prompts").select("id, created_at").order("id"),
+);
 if (readError) {
   console.error(`\nCould not read the remote collection: ${readError.message}\n`);
   process.exit(1);
 }
 const remoteCreatedAt = new Map((existing ?? []).map((r) => [r.id, r.created_at]));
 
-const { data: remoteImages, error: imageReadError } = await db
-  .from("prompt_images")
-  .select("prompt_id, storage_path");
+const { data: remoteImages, error: imageReadError } = await readAll(() =>
+  db.from("prompt_images").select("id, prompt_id, storage_path").order("id"),
+);
 if (imageReadError) {
   console.error(`\nCould not read remote images: ${imageReadError.message}\n`);
   process.exit(1);
@@ -102,16 +119,20 @@ if (replace && remoteCreatedAt.size > 0) {
   console.log(`  replace: removing ${remoteCreatedAt.size} remote prompt(s) and their images`);
   if (!dryRun) {
     const paths = (remoteImages ?? []).map((r) => r.storage_path);
-    if (paths.length > 0) await db.storage.from(bucket).remove(paths);
+    for (let i = 0; i < paths.length; i += 1000) {
+      await db.storage.from(bucket).remove(paths.slice(i, i + 1000));
+    }
     // Image rows cascade with the prompts.
     const { error } = await db.from("prompts").delete().neq("id", "");
     if (error) {
       console.error(`\nCould not clear the remote collection: ${error.message}\n`);
       process.exit(1);
     }
-    remoteCreatedAt.clear();
-    promptsWithImages.clear();
   }
+  // Outside the dry-run check, so a dry run reports what the real run would:
+  // everything added, every image uploaded — not "updated" and "skipped".
+  remoteCreatedAt.clear();
+  promptsWithImages.clear();
 }
 
 // --- prompts ----------------------------------------------------------------

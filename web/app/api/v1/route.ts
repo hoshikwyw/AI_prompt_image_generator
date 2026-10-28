@@ -1,12 +1,12 @@
 import { LICENCE } from "@/lib/openapi";
-import { CACHE, apiJson, preflight } from "@/lib/public-api";
+import { CACHE, apiJson, preflight, apiRoute } from "@/lib/public-api";
 import { limitApiRequest } from "@/lib/rate-limit";
 
 /**
  * GET /api/v1 — what this API offers, for anyone who opens the base URL. Full
  * documentation lives at /api.
  */
-export async function GET(request: Request) {
+export const GET = apiRoute(async (request: Request) => {
   const limited = await limitApiRequest(request, "index");
   if (limited) return limited;
 
@@ -40,6 +40,6 @@ export async function GET(request: Request) {
     },
     CACHE.taxonomy,
   );
-}
+});
 
 export const OPTIONS = preflight;

@@ -183,10 +183,38 @@ async function readPrompts(run: (columns: string) => PromiseLike<ReadResult>): P
   return run(LEGACY_COLUMNS);
 }
 
+/** Supabase's default `max_rows`: PostgREST answers no more, whatever `.limit()` asks. */
+const PAGE = 1000;
+
+/**
+ * Reads up to `cap` rows a page at a time. A plain `.limit(MAX_IMPORT)` was cut
+ * to 1000 rows without a word, so prompts past the thousandth vanished from the
+ * library and an import could reuse their ids. `page` must order by a unique
+ * key, or rows can repeat or go missing between pages.
+ */
+async function readAll(
+  page: (from: number, to: number) => PromiseLike<ReadResult>,
+  cap = MAX_IMPORT,
+): Promise<ReadResult> {
+  const rows: unknown[] = [];
+  for (let from = 0; from < cap; from += PAGE) {
+    const to = Math.min(from + PAGE, cap) - 1;
+    const { data, error } = await page(from, to);
+    if (error) return { data: null, error };
+    const got = (data ?? []) as unknown[];
+    rows.push(...got);
+    if (got.length <= to - from) break;
+  }
+  return { data: rows, error: null };
+}
+
 async function takenIds(): Promise<Set<string>> {
-  const { data, error } = await supabaseWrite().from(TABLE).select("id").limit(MAX_IMPORT);
+  const { data, error } = await readAll(
+    (from, to) => supabaseWrite().from(TABLE).select("id").order("id").range(from, to),
+    Number.MAX_SAFE_INTEGER,
+  );
   if (error) fail("id lookup", error);
-  return new Set((data ?? []).map((r) => r.id as string));
+  return new Set((data as { id: string }[]).map((r) => r.id));
 }
 
 export const supabaseStore: StoreBackend = {
@@ -202,11 +230,14 @@ export const supabaseStore: StoreBackend = {
    */
   async listPrompts(filter?: PromptFilter): Promise<Prompt[]> {
     const { data, error } = await readPrompts((columns) =>
-      supabaseRead()
-        .from(TABLE)
-        .select(columns)
-        .order("updated_at", { ascending: false })
-        .limit(MAX_IMPORT),
+      readAll((from, to) =>
+        supabaseRead()
+          .from(TABLE)
+          .select(columns)
+          .order("updated_at", { ascending: false })
+          .order("id")
+          .range(from, to),
+      ),
     );
     if (error) fail("list", error);
     return filterPrompts(((data ?? []) as Row[]).map(toPrompt), filter);
@@ -308,17 +339,17 @@ export const supabaseStore: StoreBackend = {
 
     // Existing creation dates have to survive an update, and an upsert would
     // overwrite them with whatever the file carries.
-    const { data: current, error: readError } = await db
-      .from(TABLE)
-      .select("id, created_at")
-      .limit(MAX_IMPORT);
+    // Every row, however many: replace deletes whatever this misses.
+    const { data, error: readError } = await readAll(
+      (from, to) => db.from(TABLE).select("id, created_at").order("id").range(from, to),
+      Number.MAX_SAFE_INTEGER,
+    );
     if (readError) fail("import (reading)", readError);
-    const existingIds = (current ?? []).map((r) => r.id as string);
+    const current = data as { id: string; created_at: string }[];
+    const existingIds = current.map((r) => r.id);
 
     // Replace starts from nothing, so the file's own dates and ids stand.
-    const createdById = new Map(
-      mode === "replace" ? [] : (current ?? []).map((r) => [r.id as string, r.created_at as string]),
-    );
+    const createdById = new Map(mode === "replace" ? [] : current.map((r) => [r.id, r.created_at]));
     const taken = new Set(createdById.keys());
     // Keyed by id: a file that names the same id twice becomes one row (the
     // last wins, as on the local backend). Two rows with one id in a single
@@ -390,18 +421,29 @@ export const supabaseStore: StoreBackend = {
     const out = new Map<string, PromptImage[]>();
     if (promptIds.length === 0) return out;
 
-    const { data, error } = await supabaseRead()
-      .from(IMAGE_TABLE)
-      .select(IMAGE_COLUMNS)
-      .in("prompt_id", promptIds)
-      .order("position", { ascending: true })
-      .order("created_at", { ascending: true });
-    if (error) fail("list images", error);
+    // In chunks, so the id list stays well inside a URL's length — the export
+    // asks for every prompt's images at once — and each chunk a page at a time.
+    for (let i = 0; i < promptIds.length; i += 200) {
+      const chunk = promptIds.slice(i, i + 200);
+      const { data, error } = await readAll(
+        (from, to) =>
+          supabaseRead()
+            .from(IMAGE_TABLE)
+            .select(IMAGE_COLUMNS)
+            .in("prompt_id", chunk)
+            .order("position", { ascending: true })
+            .order("created_at", { ascending: true })
+            .order("id")
+            .range(from, to),
+        Number.MAX_SAFE_INTEGER,
+      );
+      if (error) fail("list images", error);
 
-    for (const row of (data ?? []) as unknown as ImageRow[]) {
-      const list = out.get(row.prompt_id) ?? [];
-      list.push(toPromptImage(row));
-      out.set(row.prompt_id, list);
+      for (const row of data as ImageRow[]) {
+        const list = out.get(row.prompt_id) ?? [];
+        list.push(toPromptImage(row));
+        out.set(row.prompt_id, list);
+      }
     }
     return out;
   },

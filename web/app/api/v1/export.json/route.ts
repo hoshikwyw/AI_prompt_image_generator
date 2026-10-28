@@ -1,6 +1,6 @@
 import { allPublicPrompts } from "@/lib/dataset";
 import { LICENCE } from "@/lib/openapi";
-import { CACHE, apiJson, preflight } from "@/lib/public-api";
+import { CACHE, apiJson, preflight, apiRoute } from "@/lib/public-api";
 import { limitApiRequest } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -10,7 +10,7 @@ export const runtime = "nodejs";
  * /api/v1/prompts. For datasets and offline use; cached for an hour, so a new
  * prompt can take that long to appear here.
  */
-export async function GET(request: Request) {
+export const GET = apiRoute(async (request: Request) => {
   const limited = await limitApiRequest(request, "export");
   if (limited) return limited;
 
@@ -28,6 +28,6 @@ export async function GET(request: Request) {
     },
     CACHE.taxonomy,
   );
-}
+});
 
 export const OPTIONS = preflight;

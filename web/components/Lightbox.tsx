@@ -36,6 +36,10 @@ export default function Lightbox({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const image = openAt === null ? undefined : images[openAt];
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  // One reset at a time: a second copy within 1.6s was cut short by the first
+  // click's timer, and a timer outliving the component set state after unmount.
+  const resetTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(resetTimer.current), []);
 
   // State, not the button's textContent: after the await, React has already
   // cleared the event's currentTarget, so the old DOM poke threw silently.
@@ -44,7 +48,8 @@ export default function Lightbox({
     const ok = await copyText(promptBody);
     setCopyState(ok ? "copied" : "failed");
     if (ok && promptId) recordCopy(promptId);
-    window.setTimeout(() => setCopyState("idle"), 1600);
+    window.clearTimeout(resetTimer.current);
+    resetTimer.current = window.setTimeout(() => setCopyState("idle"), 1600);
   }
 
   useEffect(() => {
@@ -77,6 +82,7 @@ export default function Lightbox({
         if (e.target === dialogRef.current) onClose();
       }}
       className="modal modal-wide"
+      aria-label={image ? image.caption || "Sample image" : undefined}
     >
       {image && (
         <div className="flex max-h-[90vh] flex-col">

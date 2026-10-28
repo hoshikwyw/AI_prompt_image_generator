@@ -6,23 +6,32 @@ import { THEMES, THEME_COLORS, THEME_COOKIE, type Theme } from "@/lib/theme";
 /**
  * Rewrites the theme-color meta tags the way generateViewport would have for
  * this choice, so a phone's address bar follows without a reload.
+ *
+ * Edits the existing tags in place rather than removing them: React rendered
+ * them from generateViewport and still owns them, and removing them made the
+ * next client navigation throw when React went to update tags that were gone.
+ * A tag left over is switched off with a media query that never matches.
  */
 function syncThemeColor(theme: Theme) {
-  document.querySelectorAll('meta[name="theme-color"]').forEach((tag) => tag.remove());
-  const entries: Array<[string, string | null]> =
+  const entries: Array<[string, string]> =
     theme === "system"
       ? [
           [THEME_COLORS.light, "(prefers-color-scheme: light)"],
           [THEME_COLORS.dark, "(prefers-color-scheme: dark)"],
         ]
-      : [[THEME_COLORS[theme], null]];
-  for (const [color, media] of entries) {
-    const tag = document.createElement("meta");
-    tag.name = "theme-color";
+      : [[THEME_COLORS[theme], "all"]];
+  const tags = Array.from(document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]'));
+  for (const [i, [color, media]] of entries.entries()) {
+    let tag = tags[i];
+    if (!tag) {
+      tag = document.createElement("meta");
+      tag.name = "theme-color";
+      document.head.appendChild(tag);
+    }
     tag.content = color;
-    if (media) tag.media = media;
-    document.head.appendChild(tag);
+    tag.media = media;
   }
+  for (const tag of tags.slice(entries.length)) tag.media = "not all";
 }
 
 const LABELS: Record<Theme, string> = { system: "System", light: "Light", dark: "Dark" };

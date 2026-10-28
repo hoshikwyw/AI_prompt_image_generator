@@ -1,4 +1,4 @@
-import { CACHE, apiJson, preflight } from "@/lib/public-api";
+import { CACHE, apiJson, preflight, apiRoute } from "@/lib/public-api";
 import { AI_TOOLS, AI_TOOL_LABELS } from "@/lib/prompt";
 import { listPrompts } from "@/lib/store";
 import { limitApiRequest } from "@/lib/rate-limit";
@@ -10,7 +10,7 @@ export const runtime = "nodejs";
  * prompts tagged with that tool; `meta.untagged` is prompts tagged with none,
  * which work anywhere and are included by every `?ai=` filter.
  */
-export async function GET(request: Request) {
+export const GET = apiRoute(async (request: Request) => {
   const limited = await limitApiRequest(request, "tools");
   if (limited) return limited;
 
@@ -26,6 +26,6 @@ export async function GET(request: Request) {
     },
     CACHE.taxonomy,
   );
-}
+});
 
 export const OPTIONS = preflight;

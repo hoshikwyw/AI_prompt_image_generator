@@ -55,9 +55,11 @@ function run(commandLine, cwd) {
 function readLocalProperty(key) {
   try {
     const text = readFileSync(path.join(android, "local.properties"), "utf8");
-    const line = text.split(/\r?\n/).find((l) => l.startsWith(`${key}=`));
+    // "key=value", "key = value" and "key: value" are all valid properties lines.
+    const pattern = new RegExp(`^\\s*${key.replace(/\./g, "\\.")}\\s*[=:]\\s*(.*)$`);
+    const match = text.split(/\r?\n/).map((l) => pattern.exec(l)).find(Boolean);
     // Properties files escape ":" and "\" as "\:" and "\\"; undo both.
-    return line ? line.slice(key.length + 1).trim().replace(/\\(.)/g, "$1") : "";
+    return match ? match[1].trim().replace(/\\(.)/g, "$1") : "";
   } catch {
     return "";
   }

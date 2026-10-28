@@ -49,8 +49,12 @@ export const CACHE = {
   taxonomy: "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400",
   /** Random picks: a few seconds, so a burst shares one answer but it still varies. */
   random: "public, max-age=0, s-maxage=5",
-  /** Image bytes never change for a given id. */
-  image: "public, max-age=31536000, immutable",
+  /**
+   * Image bytes never change for a given id. `s-maxage` is what lets Vercel's
+   * CDN keep them: a plain max-age is for browsers only, and without it every
+   * new viewer ran the function and downloaded from storage again.
+   */
+  image: "public, max-age=31536000, s-maxage=31536000, immutable",
   /** Client errors are cheap to repeat, so the CDN absorbs a retry loop. */
   clientError: "public, max-age=0, s-maxage=60",
   serverError: "no-store",
@@ -80,6 +84,25 @@ export function apiError(
 }
 
 export const notFound = (what: string) => apiError(404, "not_found", `No ${what} with that id.`);
+
+/**
+ * Wraps a route handler so an unexpected failure — the database down, a bug —
+ * still answers in the API's error shape, with CORS headers. Without it the
+ * error escaped to Next's bare 500, which a browser reports as a CORS failure,
+ * hiding the real problem from whoever is calling.
+ */
+export function apiRoute<Args extends unknown[]>(
+  handler: (...args: Args) => Promise<Response>,
+): (...args: Args) => Promise<Response> {
+  return async (...args) => {
+    try {
+      return await handler(...args);
+    } catch (err) {
+      console.error("Public API error:", err);
+      return apiError(500, "server_error", "Something went wrong on our side. Try again shortly.");
+    }
+  };
+}
 
 /** The answer to a browser's CORS preflight, for every route's OPTIONS. */
 export const preflight = () => new Response(null, { status: 204, headers: CORS });
@@ -190,6 +213,22 @@ function invalid(param: string, message: string, allowed?: readonly string[]): R
 }
 
 /**
+ * A parameter that goes by two names: whichever was given, with that name, so
+ * an error points at what the caller actually wrote. Both, disagreeing, is an
+ * error rather than one silently winning.
+ */
+function aliased(
+  params: URLSearchParams,
+  names: [string, string],
+): { name: string; value: string | null } | Response {
+  const [a, b] = names.map((name) => ({ name, value: params.get(name) || null }));
+  if (a.value && b.value && a.value !== b.value) {
+    return invalid(b.name, `${a.name} and ${b.name} are the same filter; give one of them.`);
+  }
+  return a.value ? a : b;
+}
+
+/**
  * The filters a request asks for. Strict, unlike the site's parser: a typo in
  * an API call should say so, not quietly return the whole collection.
  * Returns a Response to send back when a parameter is wrong.
@@ -213,31 +252,42 @@ export function readFilter(params: URLSearchParams): PromptFilter | Response {
 
   // `for` and `ai` are the site's own URL names, kept so a library link's
   // query works here unchanged; `audience` and `tool` read better in code.
-  const audience = params.get("for") ?? params.get("audience");
-  if (audience) {
-    if (!AUDIENCE_FILTERS.includes(audience as AudienceFilter)) {
-      return invalid("for", `Unknown audience "${audience}".`, AUDIENCE_FILTERS);
+  // An empty `for=` used to fall through to the other name, so `for=&audience=x`
+  // filtered by x; `aliased` treats empty as absent on both sides alike.
+  const audience = aliased(params, ["for", "audience"]);
+  if (audience instanceof Response) return audience;
+  if (audience.value) {
+    if (!AUDIENCE_FILTERS.includes(audience.value as AudienceFilter)) {
+      return invalid(audience.name, `Unknown audience "${audience.value}".`, AUDIENCE_FILTERS);
     }
-    filter.audience = audience as AudienceFilter;
+    filter.audience = audience.value as AudienceFilter;
   }
 
-  const tool = params.get("ai") ?? params.get("tool");
-  if (tool) {
-    if (!AI_TOOLS.includes(tool as AiTool)) {
-      return invalid("ai", `Unknown AI tool "${tool}".`, AI_TOOLS);
+  const tool = aliased(params, ["ai", "tool"]);
+  if (tool instanceof Response) return tool;
+  if (tool.value) {
+    if (!AI_TOOLS.includes(tool.value as AiTool)) {
+      return invalid(tool.name, `Unknown AI tool "${tool.value}".`, AI_TOOLS);
     }
-    filter.model = tool as AiTool;
+    filter.model = tool.value as AiTool;
   }
 
   const tag = params.get("tag");
-  if (tag) filter.tag = normalizeTag(tag);
+  if (tag) {
+    // "#" or "  " normalizes to nothing, which matched every prompt.
+    const normalized = normalizeTag(tag);
+    if (!normalized) return invalid("tag", `"${tag}" is not a tag — tags are letters, digits and dashes.`);
+    filter.tag = normalized;
+  }
 
-  const featured = params.get("featured");
-  if (featured) {
-    if (!["1", "true", "0", "false"].includes(featured)) {
-      return invalid("featured", 'featured is "true" or "false".', ["true", "false"]);
+  // `favorites=1` is the site's name for it, so a library link works here too.
+  const featured = aliased(params, ["featured", "favorites"]);
+  if (featured instanceof Response) return featured;
+  if (featured.value) {
+    if (!["1", "true", "0", "false"].includes(featured.value)) {
+      return invalid(featured.name, `${featured.name} is "true" or "false".`, ["true", "false"]);
     }
-    filter.favoritesOnly = featured === "1" || featured === "true";
+    filter.favoritesOnly = featured.value === "1" || featured.value === "true";
   }
 
   const sort = params.get("sort");

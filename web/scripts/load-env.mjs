@@ -7,6 +7,18 @@
  */
 import { readFileSync } from "node:fs";
 
+/**
+ * A value as Next's loader reads it: a matching pair of quotes is removed and
+ * keeps what is inside, a # included; unquoted, " #" starts a comment. This
+ * used to strip any lone quote and keep a trailing comment in the value.
+ */
+function readValue(raw) {
+  const value = raw.trim();
+  const quoted = /^(["'`])(.*)\1(\s+#.*)?$/.exec(value);
+  if (quoted) return quoted[2];
+  return value.replace(/\s+#.*$/, "");
+}
+
 for (const file of [".env.local", ".env"]) {
   try {
     // Split on \r?\n: a file edited on Windows can carry CRLF, and a trailing
@@ -15,9 +27,7 @@ for (const file of [".env.local", ".env"]) {
       /\r?\n/,
     )) {
       const match = /^\s*([A-Z0-9_]+)\s*=\s*(.*)$/.exec(line);
-      if (match && !process.env[match[1]]) {
-        process.env[match[1]] = match[2].trim().replace(/^["']|["']$/g, "");
-      }
+      if (match && !process.env[match[1]]) process.env[match[1]] = readValue(match[2]);
     }
   } catch {
     // A missing file is fine; each script reports the variables it needs.
