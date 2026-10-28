@@ -40,6 +40,39 @@ first run with 17 example prompts covering every category and audience. To share
 | **Import / export** | The whole collection as one JSON file, and back again. Merge by default, or replace everything. |
 | **Two backends** | A local JSON file, or Supabase. Same behaviour either way; the footer says which is live. |
 
+## Free public API
+
+Every prompt is also available to other people's apps, bots and AI assistants — free, no key,
+read-only, CORS open. Full guide at `/api` on the deployed site; interactive reference at
+`/api/reference`.
+
+| | |
+|---|---|
+| **REST** | `/api/v1/prompts` (search, filters, paging), `/prompts/{id}`, `/prompts/{id}/related`, `/random`, `/categories`, `/audiences`, `/tools`, `/tags`, `/images/{id}` |
+| **Downloads** | `/api/v1/export.json` and `/api/v1/export.csv` — the whole collection in one file |
+| **Spec** | `/api/v1/openapi.json` (OpenAPI 3.1), generated from the same constants the API validates against |
+| **AI assistants** | `/api/mcp` — an MCP server (Streamable HTTP) with `search_prompts`, `get_prompt`, `random_prompt`, `list_filters` |
+| **For LLMs** | `/llms.txt` — the site and every prompt, in the llmstxt.org format |
+
+Prompts are licensed **CC BY 4.0**. The code lives in `web/lib/public-api.ts` (the public shape,
+validation, caching), `web/app/api/v1/` (routes), `web/lib/mcp-server.ts` and
+`web/lib/rate-limit.ts`.
+
+**Keeping it free.** Responses carry CDN cache headers, so repeats never reach the server or
+Supabase; images are served through a year-long cached route so Supabase bandwidth is spent once
+per image. With `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` set (a free Upstash
+database, no card), uncached requests are limited to 60 a minute per address and counted per day
+on `/admin`; without them the API runs unlimited. `.github/workflows/keep-awake.yml` queries the
+database daily so the free Supabase project never pauses.
+
+**Listing it.** To add it to [public-apis](https://github.com/public-apis/public-apis), open a pull
+request adding this row to the **Art & Design** section (alphabetical order), per their
+contributing guide:
+
+```markdown
+| [Promptbook](https://ai-prompt-image-generator-five.vercel.app/api) | Free AI image prompts by audience, AI tool and category | No | Yes | Yes |
+```
+
 ## Writing prompts
 
 There are two kinds, and they read differently:

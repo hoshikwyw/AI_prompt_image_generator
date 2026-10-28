@@ -32,7 +32,11 @@ export async function GET(request: Request) {
         tools: `${base}/tools`,
         tags: `${base}/tags`,
         image: `${base}/images/{id}`,
+        exportJson: `${base}/export.json`,
+        exportCsv: `${base}/export.csv`,
       },
+      mcp: `${origin}/api/mcp`,
+      llms: `${origin}/llms.txt`,
     },
     CACHE.taxonomy,
   );

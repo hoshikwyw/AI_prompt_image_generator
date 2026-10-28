@@ -49,6 +49,7 @@ export function openApiSpec(origin: string) {
         "- **Read-only:** nothing can change a prompt through the API.",
         "- **Cached:** responses carry CDN cache headers; please cache on your side too.",
         "- **Fair use:** about 60 requests a minute per IP. Over that you get `429` with `Retry-After`.",
+        `- **AI assistants:** an MCP server at \`${origin}/api/mcp\` offers the same prompts as tools (search_prompts, get_prompt, random_prompt, list_filters).`,
         "",
         `Prompts are licensed ${LICENCE.name}: free to use, including commercially, with credit to Promptbook and a link to the prompt's \`url\`.`,
       ].join("\n"),
@@ -61,6 +62,7 @@ export function openApiSpec(origin: string) {
       { name: "Prompts", description: "Find and fetch prompts." },
       { name: "Filters", description: "Values the prompt filters accept, with counts." },
       { name: "Images", description: "Sample images." },
+      { name: "Downloads", description: "The whole collection in one file." },
     ],
     paths: {
       "/prompts": {
@@ -193,6 +195,49 @@ export function openApiSpec(origin: string) {
           operationId: "listTags",
           summary: "Tags",
           responses: { "200": json(listOf("Tag"), "Every tag in use, most used first."), "429": errors["429"] },
+        },
+      },
+      "/export.json": {
+        get: {
+          tags: ["Downloads"],
+          operationId: "exportJson",
+          summary: "Every prompt as JSON",
+          description: "The whole collection in one file, in the same shape as `/prompts`. Cached for an hour.",
+          responses: {
+            "200": json(
+              {
+                type: "object",
+                required: ["data", "meta"],
+                properties: {
+                  data: { type: "array", items: ref("Prompt") },
+                  meta: {
+                    type: "object",
+                    properties: {
+                      total: { type: "integer" },
+                      generatedAt: { type: "string", format: "date-time" },
+                      licence: { type: "object", properties: { name: { type: "string" }, url: { type: "string" } } },
+                      attribution: { type: "string" },
+                    },
+                  },
+                },
+              },
+              "All prompts.",
+            ),
+            "429": errors["429"],
+          },
+        },
+      },
+      "/export.csv": {
+        get: {
+          tags: ["Downloads"],
+          operationId: "exportCsv",
+          summary: "Every prompt as CSV",
+          description:
+            "The collection as a spreadsheet (UTF-8 with a byte-order mark). List fields are joined with ` | `; `image` is the first sample's URL.",
+          responses: {
+            "200": { description: "A CSV file.", content: { "text/csv": { schema: { type: "string" } } } },
+            "429": errors["429"],
+          },
         },
       },
       "/images/{id}": {

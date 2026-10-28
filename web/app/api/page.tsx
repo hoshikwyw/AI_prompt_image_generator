@@ -35,6 +35,8 @@ const ENDPOINTS: Array<[string, string]> = [
   ["/tools", "AI tools, with labels and counts"],
   ["/tags", "Tags in use, most used first"],
   ["/images/{id}", "A sample image (cached for a year)"],
+  ["/export.json", "Every prompt in one JSON file"],
+  ["/export.csv", "Every prompt as a spreadsheet"],
   ["/openapi.json", "This API as an OpenAPI 3.1 document"],
 ];
 
@@ -105,6 +107,27 @@ while True:
     cursor = page["meta"]["nextCursor"]
     if not cursor:
         break`,
+  },
+];
+
+const MCP_URL = `${SITE_URL}/api/mcp`;
+
+const MCP_SETUP = [
+  {
+    label: "Claude Code",
+    code: code`claude mcp add --transport http promptbook ${MCP_URL}`,
+  },
+  {
+    label: "Config file",
+    code: code`
+{
+  "mcpServers": {
+    "promptbook": {
+      "type": "http",
+      "url": "${MCP_URL}"
+    }
+  }
+}`,
   },
 ];
 
@@ -202,6 +225,41 @@ export default async function ApiDocsPage() {
               </div>
             ))}
           </div>
+        </Section>
+
+        <Section id="mcp" title="Use it from an AI assistant (MCP)">
+          <p>
+            Promptbook is also an <strong>MCP server</strong>, so an AI assistant can search it for
+            you — ask “find me a Gemini saree portrait prompt” and it fetches one. The address:
+          </p>
+          <CodeTabs label="MCP address" samples={[{ label: "MCP server URL", code: MCP_URL }]} />
+          <p>
+            In apps that take a custom connector or remote MCP server — Claude, ChatGPT and others —
+            add that URL. For coding tools:
+          </p>
+          <CodeTabs label="MCP setup" samples={MCP_SETUP} />
+          <p>
+            Tools: <C>search_prompts</C>, <C>get_prompt</C>, <C>random_prompt</C>,{" "}
+            <C>list_filters</C>. All read-only, no key, the same fair-use limit as the API.
+          </p>
+        </Section>
+
+        <Section id="downloads" title="Download everything">
+          <p>
+            The whole collection in one file, in the same shape as <C>/prompts</C>:{" "}
+            <a href="/api/v1/export.json" className="text-accent underline underline-offset-2">
+              export.json
+            </a>{" "}
+            or, for spreadsheets,{" "}
+            <a href="/api/v1/export.csv" className="text-accent underline underline-offset-2">
+              export.csv
+            </a>
+            . Both refresh hourly. Language models can start from{" "}
+            <a href="/llms.txt" className="text-accent underline underline-offset-2">
+              llms.txt
+            </a>
+            , which links every prompt.
+          </p>
         </Section>
 
         <Section id="filters" title="Filters and paging">
