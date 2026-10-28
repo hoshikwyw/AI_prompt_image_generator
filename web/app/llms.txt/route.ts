@@ -6,6 +6,13 @@ import { listPrompts } from "@/lib/store";
 export const runtime = "nodejs";
 
 /**
+ * Text from a prompt, safe inside one Markdown list item. Titles and summaries
+ * are only trimmed when saved, so a newline could start a fake "## Optional"
+ * section in the file AI tools trust, and a "]" broke the link around it.
+ */
+const inline = (text: string) => text.replace(/\s+/g, " ").trim().replace(/([\\[\]()*_`])/g, "\\$1");
+
+/**
  * GET /llms.txt — the site described for language models, in the llmstxt.org
  * format: a title, a one-line summary, then sections of links. Lets an AI tool
  * that is asked about Promptbook find the API, the MCP server and every prompt
@@ -21,7 +28,8 @@ export async function GET(request: Request) {
       p.audience === "any" ? "for anyone" : `for ${AUDIENCE_LABELS[p.audience].toLowerCase()}`,
       p.models.length ? p.models.map((m) => AI_TOOL_LABELS[m]).join(", ") : "any AI tool",
     ].join(" · ");
-    return `- [${p.title}](${origin}/prompts/${p.id}): ${p.summary ? `${p.summary} — ` : ""}${facts}`;
+    const summary = inline(p.summary);
+    return `- [${inline(p.title)}](${origin}/prompts/${p.id}): ${summary ? `${summary} — ` : ""}${facts}`;
   };
 
   const body = `# Promptbook

@@ -66,8 +66,26 @@ export default function PromptForm({ prompt }: Props) {
       // Older browsers only show the prompt when returnValue is set.
       event.returnValue = "";
     };
+    // Links inside the app navigate without unloading the page, so
+    // beforeunload never saw Cancel, the logo or "← Library" — the draft just
+    // vanished. Caught in the capture phase, before Next's Link handles the
+    // click; Link leaves a click alone once it is default-prevented.
+    const onClick = (event: MouseEvent) => {
+      if (saved.current || event.defaultPrevented || event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const link = (event.target as Element | null)?.closest?.("a[href]");
+      if (!(link instanceof HTMLAnchorElement) || link.target === "_blank") return;
+      if (link.origin !== window.location.origin || link.hasAttribute("download")) return;
+      if (window.confirm("Leave without saving? Your changes will be lost.")) return;
+      event.preventDefault();
+      event.stopPropagation();
+    };
     window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+    document.addEventListener("click", onClick, true);
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      document.removeEventListener("click", onClick, true);
+    };
   }, [dirty]);
 
   const set = <K extends keyof PromptDraft>(key: K, value: PromptDraft[K]) =>

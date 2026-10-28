@@ -107,9 +107,11 @@ export function readImportItem(
       wantedId: typeof raw.id === "string" ? slugify(raw.id) : "",
       draft,
       favorite: typeof raw.favorite === "boolean" ? raw.favorite : false,
+      // Capped at Postgres's integer: one larger value failed the whole upsert
+      // chunk, after earlier chunks were already written.
       copies:
         typeof raw.copies === "number" && Number.isFinite(raw.copies) && raw.copies >= 0
-          ? Math.floor(raw.copies)
+          ? Math.min(Math.floor(raw.copies), 2_147_483_647)
           : 0,
       createdAt: isIso(raw.createdAt) ? raw.createdAt : stamp,
       updatedAt: isIso(raw.updatedAt) ? raw.updatedAt : stamp,

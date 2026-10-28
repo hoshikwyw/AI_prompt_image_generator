@@ -57,7 +57,7 @@ async function pipeline(commands: Command[]): Promise<unknown[] | null> {
  * and overwrites anything a client sends there, so it cannot be spoofed past
  * the edge. Locally there is no proxy, and everyone shares one bucket.
  */
-function clientAddress(request: Request): string {
+export function clientAddress(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   return forwarded || request.headers.get("x-real-ip") || "local";
 }

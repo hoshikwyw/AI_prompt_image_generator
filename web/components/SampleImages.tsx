@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Lightbox from "./Lightbox";
 import { deleteResource, errorMessage, fetchJson } from "@/lib/api";
+import { useArmed } from "@/lib/use-armed";
 import {
   ACCEPTED_SAMPLE_MIME,
   MAX_CAPTION,
@@ -124,14 +125,7 @@ export default function SampleImages({
               <figcaption className="flex items-center justify-between gap-3 px-3 py-2 text-xs text-muted">
                 <span className="truncate">{image.caption || "Sample"}</span>
                 {canEdit && (
-                  <button
-                    type="button"
-                    onClick={() => remove(image)}
-                    className="shrink-0 transition hover:text-danger"
-                    aria-label={`Remove ${image.caption || "sample"}`}
-                  >
-                    Remove
-                  </button>
+                  <RemoveImage name={image.caption || "sample"} onRemove={() => remove(image)} />
                 )}
               </figcaption>
             </figure>
@@ -183,5 +177,23 @@ export default function SampleImages({
         promptId={promptId}
       />
     </section>
+  );
+}
+
+/**
+ * Two-step, like deleting a prompt (see `useArmed`): the upload is gone for
+ * good once removed, and a single slip of the finger used to do it.
+ */
+function RemoveImage({ name, onRemove }: { name: string; onRemove: () => void }) {
+  const { armed, arm } = useArmed();
+  return (
+    <button
+      type="button"
+      onClick={() => (armed ? onRemove() : arm())}
+      className={`shrink-0 transition hover:text-danger ${armed ? "font-medium text-danger" : ""}`}
+      aria-label={armed ? `Click again to remove ${name}` : `Remove ${name}`}
+    >
+      {armed ? "Click again to remove" : "Remove"}
+    </button>
   );
 }

@@ -29,21 +29,32 @@ alter table public.prompts add column if not exists models   text[] not null def
 -- `target_model` is reset to 'any' as each row is mapped, so a re-run cannot
 -- map it again: without that, a prompt an admin later set to "Any AI" (an
 -- empty list) would get its old tool back from the stale text.
-update public.prompts
-   set models = case
-     when target_model ~* 'gemini|nano.?banana|imagen'  then array['gemini']
-     when target_model ~* 'chatgpt|gpt|dall'            then array['chatgpt']
-     when target_model ~* 'midjourney'                  then array['midjourney']
-     when target_model ~* 'flux'                        then array['flux']
-     when target_model ~* 'stable.?diffusion|sdxl'      then array['stable-diffusion']
-     when target_model ~* 'leonardo'                    then array['leonardo']
-     when target_model ~* 'ideogram'                    then array['ideogram']
-     when target_model ~* 'grok'                        then array['grok']
-     when target_model ~* 'copilot|bing|designer'       then array['copilot']
-     else '{}'::text[]
-   end,
-       target_model = 'any'
- where models = '{}' and target_model <> 'any';
+--
+-- Guarded, so the file still runs again once target_model has been dropped
+-- as suggested at the end — this file is meant to be safe to re-run.
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+     where table_schema = 'public' and table_name = 'prompts' and column_name = 'target_model'
+  ) then
+    update public.prompts
+       set models = case
+         when target_model ~* 'gemini|nano.?banana|imagen'  then array['gemini']
+         when target_model ~* 'chatgpt|gpt|dall'            then array['chatgpt']
+         when target_model ~* 'midjourney'                  then array['midjourney']
+         when target_model ~* 'flux'                        then array['flux']
+         when target_model ~* 'stable.?diffusion|sdxl'      then array['stable-diffusion']
+         when target_model ~* 'leonardo'                    then array['leonardo']
+         when target_model ~* 'ideogram'                    then array['ideogram']
+         when target_model ~* 'grok'                        then array['grok']
+         when target_model ~* 'copilot|bing|designer'       then array['copilot']
+         else '{}'::text[]
+       end,
+           target_model = 'any'
+     where models = '{}' and target_model <> 'any';
+  end if;
+end $$;
 
 -- The old constraint has to go before rows can take the new category names.
 alter table public.prompts drop constraint if exists prompts_category_known;
@@ -91,5 +102,13 @@ create index if not exists prompts_audience_idx on public.prompts (audience);
 -- drop it once you are sure you will not:
 --
 --   alter table public.prompts drop column target_model;
-comment on column public.prompts.target_model is
-  'Deprecated: replaced by models. Unused by the app; safe to drop.';
+do $
+begin
+  if exists (
+    select 1 from information_schema.columns
+     where table_schema = 'public' and table_name = 'prompts' and column_name = 'target_model'
+  ) then
+    comment on column public.prompts.target_model is
+      'Deprecated: replaced by models. Unused by the app; safe to drop.';
+  end if;
+end $;

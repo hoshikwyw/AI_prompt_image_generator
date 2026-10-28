@@ -1,6 +1,6 @@
 import "server-only";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { activeBackend } from "./store";
 
 /**
@@ -76,6 +76,28 @@ function verifySessionToken(token: string | undefined): boolean {
   return sameSecret(signature, sign(expiresAt, nonce));
 }
 
+/**
+ * True when the browser says the request came from another site. The session
+ * cookie is SameSite=Lax, so a gated collection was already safe from that —
+ * but an open one (local, no passphrase) needs no cookie at all, and any page
+ * open in the same browser could POST a replace-import to localhost as a
+ * plain text/plain request, with no preflight to stop it. Browsers send
+ * Sec-Fetch-Site on every request; Origin is the fallback for older ones. A
+ * request with neither (curl, a script) is not a browser being tricked.
+ */
+async function crossSite(): Promise<boolean> {
+  const h = await headers();
+  const site = h.get("sec-fetch-site");
+  if (site) return site !== "same-origin" && site !== "none";
+  const origin = h.get("origin");
+  if (!origin) return false;
+  try {
+    return new URL(origin).host !== h.get("host");
+  } catch {
+    return true;
+  }
+}
+
 /** True when this request may write. Pages call it to decide what to render. */
 export async function isAdmin(): Promise<boolean> {
   const policy = writePolicy();
@@ -90,6 +112,9 @@ export async function isAdmin(): Promise<boolean> {
  * and cannot forget to act on the result the way a boolean invites.
  */
 export async function requireAdmin(): Promise<Response | null> {
+  if (await crossSite()) {
+    return Response.json({ error: "Writes must come from this site." }, { status: 403 });
+  }
   if (await isAdmin()) return null;
 
   if (writePolicy() === "locked") {

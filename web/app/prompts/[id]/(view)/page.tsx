@@ -42,6 +42,8 @@ export async function generateMetadata({ params }: PageProps<"/prompts/[id]">) {
   return {
     title: prompt.title,
     description,
+    // One address per prompt: `?utm=…` and other query variants are the same page.
+    alternates: { canonical: `/prompts/${prompt.id}` },
     openGraph: {
       title: prompt.title,
       description,

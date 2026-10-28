@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import BackToTop from "./BackToTop";
 import ImportExport from "./ImportExport";
@@ -19,6 +20,7 @@ import {
   SORTS,
   filterPrompts,
   filterToQuery,
+  parseFilter,
   tagCounts,
   type AiTool,
   type Prompt,
@@ -29,11 +31,6 @@ import {
 
 interface Props {
   prompts: Prompt[];
-  /**
-   * Parsed from the query string on the server, so a shared link opens
-   * filtered — or, on a plain visit, from the visitor's remembered choice.
-   */
-  initialFilter: PromptFilter;
   /**
    * What the visitor's cookie held when the page loaded. Not the same as the
    * view's audience and model when a link set those — and a link's values must
@@ -67,6 +64,15 @@ type Prefs = Pick<PromptFilter, "audience" | "model">;
 /** A year: long enough to feel remembered, and refreshed on every choice. */
 const PREFS_MAX_AGE = 60 * 60 * 24 * 365;
 
+/**
+ * The filter a URL asks for. A link that says who or which AI wins over the
+ * remembered choice, the same rule the server applies.
+ */
+function filterFromUrl(params: Pick<URLSearchParams, "get" | "has">, prefs: Prefs): PromptFilter {
+  const fromUrl = parseFilter((key) => params.get(key));
+  return params.has("for") || params.has("ai") ? fromUrl : { ...fromUrl, ...prefs };
+}
+
 /** Saves the choice the page reads on the next visit; see `PREFS_COOKIE`. */
 function writePrefs({ audience, model }: Prefs) {
   const value = filterToQuery({ audience, model });
@@ -83,17 +89,29 @@ function writePrefs({ audience, model }: Prefs) {
  */
 export default function Library({
   prompts: initial,
-  initialFilter,
   savedPrefs: initialPrefs,
   canEdit,
   covers,
 }: Props) {
   const [prompts, setPrompts] = useState(initial);
-  const [filter, setFilter] = useState<PromptFilter>(initialFilter);
+  const searchParams = useSearchParams();
+  // From the URL as it is now, not as the server last rendered it: the filter
+  // lives in the URL through replaceState, and Back to the library restores the
+  // render from the first visit — so a prop-based start reopened with the
+  // search and chips gone.
+  const [filter, setFilter] = useState<PromptFilter>(() => filterFromUrl(searchParams, initialPrefs));
   const [savedPrefs, setSavedPrefs] = useState<Prefs>(initialPrefs);
   const [allTagsShown, setAllTagsShown] = useState(false);
 
-  const visible = useMemo(() => filterPrompts(prompts, filter), [prompts, filter]);
+  // Sorted on the copy counts the page loaded with. Copying bumps the count on
+  // the card at once, and under "Most copied" the card then jumped past its
+  // neighbour — so a quick second click landed on a different prompt.
+  const [loadedCopies] = useState(() => new Map(initial.map((p) => [p.id, p.copies])));
+  const visible = useMemo(() => {
+    const live = new Map(prompts.map((p) => [p.id, p]));
+    const frozen = prompts.map((p) => ({ ...p, copies: loadedCopies.get(p.id) ?? p.copies }));
+    return filterPrompts(frozen, filter).map((p) => live.get(p.id)!);
+  }, [prompts, filter, loadedCopies]);
   // Counts stay whole-collection so chips do not vanish as you narrow.
   const tags = useMemo(() => tagCounts(prompts), [prompts]);
   const shownTags = allTagsShown ? tags : tags.slice(0, TAGS_COLLAPSED);
@@ -127,10 +145,30 @@ export default function Library({
   }, []);
 
   // Keep the URL shareable without a navigation — this is view state, not a page.
+  // Every query written is remembered, so the effect below can tell this
+  // library's own URL changes from a navigation it did not make.
+  const written = useRef(new Set<string>());
   useEffect(() => {
     const query = filterToQuery(filter);
+    written.current.add(query);
+    if (written.current.size > 50) written.current.delete(written.current.values().next().value!);
     window.history.replaceState(null, "", query ? `/?${query}` : "/");
   }, [filter]);
+
+  // A link to the library while already on it — the logo, a "/?tag=…" link —
+  // changes the URL, but Next serves its cached render and this component
+  // keeps its state, so the grid stayed filtered under a URL that said
+  // otherwise. A query the library never wrote came from such a navigation.
+  // (Checked against everything written, not only the last: the URL catches
+  // up a beat late, and mid-typing it can still show an earlier keystroke.)
+  const urlQuery = searchParams.toString();
+  useEffect(() => {
+    if (written.current.has(urlQuery)) return;
+    // Syncing from the URL, an external system, is what an effect is for.
+    setFilter(filterFromUrl(new URLSearchParams(urlQuery), savedPrefs));
+    // savedPrefs is read, not tracked: a new choice is not a navigation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlQuery]);
 
   const set = (patch: Partial<PromptFilter>) => setFilter((f) => ({ ...f, ...patch }));
 

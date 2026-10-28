@@ -187,18 +187,15 @@ async function readPrompts(run: (columns: string) => PromiseLike<ReadResult>): P
 const PAGE = 1000;
 
 /**
- * Reads up to `cap` rows a page at a time. A plain `.limit(MAX_IMPORT)` was cut
+ * Reads every row, a page at a time. A plain `.limit(MAX_IMPORT)` was cut
  * to 1000 rows without a word, so prompts past the thousandth vanished from the
  * library and an import could reuse their ids. `page` must order by a unique
  * key, or rows can repeat or go missing between pages.
  */
-async function readAll(
-  page: (from: number, to: number) => PromiseLike<ReadResult>,
-  cap = MAX_IMPORT,
-): Promise<ReadResult> {
+async function readAll(page: (from: number, to: number) => PromiseLike<ReadResult>): Promise<ReadResult> {
   const rows: unknown[] = [];
-  for (let from = 0; from < cap; from += PAGE) {
-    const to = Math.min(from + PAGE, cap) - 1;
+  for (let from = 0; ; from += PAGE) {
+    const to = from + PAGE - 1;
     const { data, error } = await page(from, to);
     if (error) return { data: null, error };
     const got = (data ?? []) as unknown[];
@@ -211,7 +208,6 @@ async function readAll(
 async function takenIds(): Promise<Set<string>> {
   const { data, error } = await readAll(
     (from, to) => supabaseWrite().from(TABLE).select("id").order("id").range(from, to),
-    Number.MAX_SAFE_INTEGER,
   );
   if (error) fail("id lookup", error);
   return new Set((data as { id: string }[]).map((r) => r.id));
@@ -342,7 +338,6 @@ export const supabaseStore: StoreBackend = {
     // Every row, however many: replace deletes whatever this misses.
     const { data, error: readError } = await readAll(
       (from, to) => db.from(TABLE).select("id, created_at").order("id").range(from, to),
-      Number.MAX_SAFE_INTEGER,
     );
     if (readError) fail("import (reading)", readError);
     const current = data as { id: string; created_at: string }[];
@@ -403,7 +398,13 @@ export const supabaseStore: StoreBackend = {
       for (let i = 0; i < stale.length; i += 200) {
         const chunk = stale.slice(i, i + 200);
         // Storage paths first: the cascade removes the rows that record them.
-        const { data: images } = await db.from(IMAGE_TABLE).select("storage_path").in("prompt_id", chunk);
+        const { data: images, error: imageError } = await db
+          .from(IMAGE_TABLE)
+          .select("storage_path")
+          .in("prompt_id", chunk);
+        // Without the paths, the cascade below would erase the only record of
+        // those objects and leave them in the bucket for good.
+        if (imageError) fail("import (reading old images)", imageError);
         const { error } = await db.from(TABLE).delete().in("id", chunk);
         if (error) fail("import (removing old prompts)", error);
         const paths = (images ?? []).map((r) => r.storage_path as string);
@@ -435,7 +436,6 @@ export const supabaseStore: StoreBackend = {
             .order("created_at", { ascending: true })
             .order("id")
             .range(from, to),
-        Number.MAX_SAFE_INTEGER,
       );
       if (error) fail("list images", error);
 

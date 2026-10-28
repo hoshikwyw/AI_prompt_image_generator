@@ -32,7 +32,15 @@ jobs:
           SITE: ${{ vars.PROMPTBOOK_URL || 'https://ai-prompt-image-generator-five.vercel.app' }}
         run: |
           url="${SITE%/}/api/v1/prompts?limit=1&keepalive=$(date +%s)"
-          status=$(curl -sS -o response.json -w '%{http_code}' --retry 3 --retry-delay 20 "$url")
+          status=$(curl -sS -D headers.txt -o response.json -w '%{http_code}' --retry 3 --retry-delay 20 "$url")
           echo "GET $url -> $status"
           head -c 300 response.json; echo
           test "$status" = "200"
+          # A 200 from the built-in prompts touches no database, so it would
+          # pass while the Supabase project pauses. A warning, not a failure:
+          # a site deliberately run without a database should not go red daily.
+          storage=$(grep -i '^x-promptbook-storage:' headers.txt | tail -1 | cut -d: -f2 | tr -d ' \r')
+          echo "Storage: ${storage:-unknown}"
+          if [ "$storage" != "supabase" ]; then
+            echo "::warning::The site answered from '${storage:-unknown}' storage, not Supabase, so no database was queried. Check SUPABASE_URL and SUPABASE_ANON_KEY on Vercel."
+          fi

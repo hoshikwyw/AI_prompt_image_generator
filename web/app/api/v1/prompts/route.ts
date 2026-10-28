@@ -8,7 +8,7 @@ import {
   toPublicPrompt,
   apiRoute,
 } from "@/lib/public-api";
-import { listImages, listPrompts } from "@/lib/store";
+import { activeBackend, listImages, listPrompts } from "@/lib/store";
 import { limitApiRequest } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -47,6 +47,11 @@ export const GET = apiRoute(async (request: Request) => {
       },
     },
     CACHE.content,
+    200,
+    // Which storage answered — the footer says so too. The keep-awake job
+    // reads it: a 200 from the built-in prompts would otherwise pass while
+    // the Supabase project it is meant to keep awake quietly paused.
+    { "X-Promptbook-Storage": activeBackend() },
   );
 });
 

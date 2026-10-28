@@ -1,16 +1,23 @@
 package com.hoshikwyw.promptbook;
 
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.drawable.ColorDrawable;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Window;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import androidx.activity.OnBackPressedCallback;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
+import com.getcapacitor.Bridge;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.BridgeWebViewClient;
 
 /**
  * The whole app is one WebView showing the deployed site.
@@ -29,6 +36,8 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         applySystemTheme(getResources().getConfiguration());
+        keepHttpErrorsOnTheSite();
+        handleDownloads();
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
@@ -46,6 +55,43 @@ public class MainActivity extends BridgeActivity {
                 setEnabled(false);
                 getOnBackPressedDispatcher().onBackPressed();
                 setEnabled(true);
+            }
+        });
+    }
+
+    /**
+     * Capacitor swaps in the "can't reach Promptbook" page for any main-frame
+     * HTTP error, not only for a lost connection — so a 404 for a deleted
+     * prompt, or a 500 while the database is down, told someone who was online
+     * to check their internet, and Back led to the same error again. The site
+     * has its own not-found and error pages; let them show. Real network
+     * failures still arrive through onReceivedError and get error.html.
+     */
+    private void keepHttpErrorsOnTheSite() {
+        Bridge bridge = getBridge();
+        if (bridge == null) return;
+        bridge.setWebViewClient(new BridgeWebViewClient(bridge) {
+            @Override
+            public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
+                // Deliberately not calling super: that is what loads error.html.
+            }
+        });
+    }
+
+    /**
+     * A WebView ignores downloads unless told what to do with them, so the
+     * collection export and the API's CSV/JSON downloads did nothing at all when
+     * tapped. They are public URLs, so the phone's browser can fetch them and
+     * save the file the usual way.
+     */
+    private void handleDownloads() {
+        Bridge bridge = getBridge();
+        if (bridge == null || bridge.getWebView() == null) return;
+        bridge.getWebView().setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> {
+            try {
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+            } catch (ActivityNotFoundException ignored) {
+                // No browser installed: nothing else could save it either.
             }
         });
     }

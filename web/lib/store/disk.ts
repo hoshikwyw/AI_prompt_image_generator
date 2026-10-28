@@ -121,24 +121,28 @@ async function writeCollection(next: Collection): Promise<void> {
   await rename(tmp, FILE);
 }
 
-/** Read, mutate, write — under the queue, so callers never race. */
+/**
+ * Read, mutate, write — under the queue, so callers never race. A mutator that
+ * hands back the array it was given changed nothing, and the file is left
+ * alone: a copy or edit of an unknown id used to rewrite the whole collection.
+ */
 function mutate<T>(fn: (prompts: Prompt[]) => { prompts: Prompt[]; result: T }): Promise<T> {
   return serialize(async () => {
     const current = await readCollection();
     const { prompts, result } = fn(current.prompts);
-    await writeCollection({ ...current, version: VERSION, prompts });
+    if (prompts !== current.prompts) await writeCollection({ ...current, version: VERSION, prompts });
     return result;
   });
 }
 
-/** The same, for the image index. */
+/** The same, for the image index; the prompts are passed for reading. */
 function mutateImages<T>(
-  fn: (images: StoredImage[]) => { images: StoredImage[]; result: T },
+  fn: (images: StoredImage[], prompts: Prompt[]) => { images: StoredImage[]; result: T },
 ): Promise<T> {
   return serialize(async () => {
     const current = await readCollection();
-    const { images, result } = fn(current.images);
-    await writeCollection({ ...current, version: VERSION, images });
+    const { images, result } = fn(current.images, current.prompts);
+    if (images !== current.images) await writeCollection({ ...current, version: VERSION, images });
     return result;
   });
 }
@@ -308,7 +312,11 @@ export const diskStore: StoreBackend = {
     await mkdir(IMAGE_DIR, { recursive: true });
     await writeFile(path.join(IMAGE_DIR, file), input.bytes);
 
-    return mutateImages((images) => {
+    const image = await mutateImages((images, prompts) => {
+      // Checked again under the queue: the prompt can be deleted while sharp
+      // re-encodes, and a row added after that pointed at a prompt that no
+      // longer existed — and turned up on the next prompt to reuse its id.
+      if (!prompts.some((p) => p.id === promptId)) return { images, result: null };
       const siblings = images.filter((i) => i.promptId === promptId);
       const stored: StoredImage = {
         id,
@@ -324,6 +332,8 @@ export const diskStore: StoreBackend = {
       };
       return { images: [...images, stored], result: toPromptImage(stored) };
     });
+    if (!image) await rm(path.join(IMAGE_DIR, file), { force: true });
+    return image;
   },
 
   async deleteImage(imageId: string): Promise<boolean> {

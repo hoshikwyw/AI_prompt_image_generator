@@ -302,8 +302,21 @@ export function slugify(value: string): string {
     .slice(0, 60);
 }
 
+/**
+ * Lowercase words joined by dashes, in any script. Tags used to go through
+ * `slugify`, which keeps only a–z and 0–9, so a Burmese, Chinese or Cyrillic
+ * tag came out empty and was dropped without a word. Ids stay ASCII (they are
+ * URLs, and the database checks them); tags have no such limit. `\p{M}` keeps
+ * the combining marks that scripts such as Burmese and Hindi are written with.
+ */
 export function normalizeTag(value: string): string {
-  return slugify(value).slice(0, MAX.tag);
+  const tag = value
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{M}\p{N}]+/gu, "-")
+    .replace(/^-+|-+$/g, "");
+  // By code point, so the cap never splits a character in two.
+  return Array.from(tag).slice(0, MAX.tag).join("").replace(/-+$/, "");
 }
 
 export interface ValidationResult {
@@ -326,7 +339,9 @@ export function validateDraft(input: unknown): ValidationResult {
   const title = str(raw.title);
   if (!title) errors.title = "Title is required.";
   else if (title.length > MAX.title) errors.title = `Title is over ${MAX.title} characters.`;
-  else if (!slugify(title)) errors.title = "Title needs at least one letter or number.";
+  // Any script counts: the id falls back to "prompt" when the title has no
+  // Latin letters (see uniqueId), so a Burmese title saves like any other.
+  else if (!/[\p{L}\p{N}]/u.test(title)) errors.title = "Title needs at least one letter or number.";
 
   const body = str(raw.body);
   if (!body) errors.body = "Prompt text is required.";

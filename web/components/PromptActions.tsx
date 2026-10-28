@@ -50,6 +50,8 @@ export default function PromptActions({
   const setFavorite = (value: boolean) =>
     onChange ? onChange({ favorite: value }) : setOwnFavorite(value);
   const [copyState, setCopyState] = useState<CopyState>("idle");
+  const resetTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(resetTimer.current), []);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
 
@@ -74,7 +76,10 @@ export default function PromptActions({
   async function copy() {
     if (await copyText(prompt.body)) {
       setCopyState("copied");
-      window.setTimeout(() => setCopyState("idle"), 1600);
+      // One reset at a time, as in the lightbox: a second copy within 1.6s was
+      // cut short by the first click's timer.
+      window.clearTimeout(resetTimer.current);
+      resetTimer.current = window.setTimeout(() => setCopyState("idle"), 1600);
       showToast(pasteHint(prompt.models));
       countCopy();
       return;
