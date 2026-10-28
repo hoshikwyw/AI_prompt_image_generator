@@ -15,6 +15,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     { url: SITE_URL, lastModified: newest || undefined, changeFrequency: "daily", priority: 1 },
+    { url: `${SITE_URL}/api`, changeFrequency: "monthly", priority: 0.5 },
     ...prompts.map((p) => ({
       url: `${SITE_URL}/prompts/${p.id}`,
       lastModified: p.updatedAt,

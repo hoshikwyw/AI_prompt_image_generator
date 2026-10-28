@@ -1,3 +1,4 @@
+import { LICENCE } from "@/lib/openapi";
 import { CACHE, apiJson, preflight } from "@/lib/public-api";
 
 /**
@@ -5,13 +6,18 @@ import { CACHE, apiJson, preflight } from "@/lib/public-api";
  * documentation lives at /api.
  */
 export function GET(request: Request) {
-  const base = `${new URL(request.url).origin}/api/v1`;
+  const { origin } = new URL(request.url);
+  const base = `${origin}/api/v1`;
   return apiJson(
     {
       name: "Promptbook API",
       version: "v1",
       description:
         "Free, read-only access to ready-to-copy AI image prompts. No key needed; CORS is open.",
+      docs: `${origin}/api`,
+      reference: `${origin}/api/reference`,
+      openapi: `${base}/openapi.json`,
+      licence: LICENCE,
       endpoints: {
         prompts: `${base}/prompts`,
         prompt: `${base}/prompts/{id}`,
