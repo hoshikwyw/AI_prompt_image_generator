@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { TOAST_EVENT } from "@/lib/toast";
+import { TOAST_EVENT, type ToastDetail } from "@/lib/toast";
 
 /** Long enough to read a short sentence, short enough not to linger. */
 const VISIBLE_MS = 2600;
@@ -12,7 +12,7 @@ const VISIBLE_MS = 2600;
  * simply empty, and invisible, between messages.
  */
 export default function Toaster() {
-  const [message, setMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastDetail | null>(null);
   // Bumped per message so the same text twice still re-runs the entrance.
   const [key, setKey] = useState(0);
   const timer = useRef<number | undefined>(undefined);
@@ -20,9 +20,9 @@ export default function Toaster() {
   useEffect(() => {
     const onToast = (event: Event) => {
       window.clearTimeout(timer.current);
-      setMessage((event as CustomEvent<string>).detail);
+      setToast((event as CustomEvent<ToastDetail>).detail);
       setKey((k) => k + 1);
-      timer.current = window.setTimeout(() => setMessage(null), VISIBLE_MS);
+      timer.current = window.setTimeout(() => setToast(null), VISIBLE_MS);
     };
     window.addEventListener(TOAST_EVENT, onToast);
     return () => {
@@ -33,10 +33,10 @@ export default function Toaster() {
 
   return (
     <div role="status" aria-live="polite" className="toast-region">
-      {message && (
+      {toast && (
         <p key={key} className="toast">
           <svg
-            className="h-4 w-4 shrink-0 text-success"
+            className={`h-4 w-4 shrink-0 ${toast.tone === "error" ? "text-danger" : "text-success"}`}
             viewBox="0 0 16 16"
             fill="none"
             stroke="currentColor"
@@ -45,9 +45,9 @@ export default function Toaster() {
             strokeLinejoin="round"
             aria-hidden
           >
-            <path d="m3.5 8.5 3 3 6-6.5" />
+            <path d={toast.tone === "error" ? "M4.5 4.5l7 7m0-7-7 7" : "m3.5 8.5 3 3 6-6.5"} />
           </svg>
-          {message}
+          {toast.message}
         </p>
       )}
     </div>

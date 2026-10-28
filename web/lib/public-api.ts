@@ -104,6 +104,40 @@ export function apiRoute<Args extends unknown[]>(
   };
 }
 
+/**
+ * A body sent a piece at a time, with the API's CORS and cache headers. For the
+ * downloads: built as one string, a large collection crossed the 4.5 MB a
+ * Vercel function may return in one go, and the download failed outright.
+ */
+export function apiStream(
+  parts: Iterable<string>,
+  contentType: string,
+  cache: string,
+  headers: Record<string, string> = {},
+): Response {
+  const encoder = new TextEncoder();
+  const iterator = parts[Symbol.iterator]();
+  const body = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      // A few hundred rows per chunk: small enough to stream, few enough writes.
+      let chunk = "";
+      for (let i = 0; i < 200; i++) {
+        const next = iterator.next();
+        if (next.done) {
+          if (chunk) controller.enqueue(encoder.encode(chunk));
+          controller.close();
+          return;
+        }
+        chunk += next.value;
+      }
+      controller.enqueue(encoder.encode(chunk));
+    },
+  });
+  return new Response(body, {
+    headers: { ...CORS, "Content-Type": contentType, "Cache-Control": cache, ...headers },
+  });
+}
+
 /** The answer to a browser's CORS preflight, for every route's OPTIONS. */
 export const preflight = () => new Response(null, { status: 204, headers: CORS });
 

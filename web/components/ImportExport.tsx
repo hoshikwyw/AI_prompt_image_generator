@@ -3,9 +3,20 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import Select from "./Select";
-import { errorMessage, fetchJson, sendJson } from "@/lib/api";
+import { ApiError, errorMessage, fetchJson, sendJson } from "@/lib/api";
 import type { Prompt } from "@/lib/prompt";
 import { useArmed } from "@/lib/use-armed";
+
+/**
+ * Under the 4.5 MB a Vercel function accepts. Checked before reading, so the
+ * wrong file — a video renamed .json — cannot freeze the tab, and a file that
+ * is too big says so instead of "HTTP 413" from the host.
+ */
+const MAX_FILE_BYTES = 4 * 1024 * 1024;
+const TOO_BIG = "That file is over 4 MB. Split it into smaller files and import them one by one (merge).";
+
+/** Skipped rows listed by name, with why. */
+const SKIPS_SHOWN = 5;
 
 interface Summary {
   mode: string;
@@ -47,20 +58,35 @@ export default function ImportExport({ onImported }: { onImported: (prompts: Pro
     event.target.value = "";
     if (!file) return;
 
-    setBusy(true);
     setError(null);
     setSummary(null);
+    if (file.size > MAX_FILE_BYTES) return setError(TOO_BIG);
+
+    setBusy(true);
     try {
-      const parsed: unknown = JSON.parse(await file.text());
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(await file.text());
+      } catch {
+        // The parser's own message ("Unexpected token '�'…") helps nobody; the
+        // usual cause is a file saved as UTF-16, as Windows PowerShell does.
+        throw new Error("That is not a JSON export. Check the file, and that it is saved as UTF-8.");
+      }
       setSummary(
         await fetchJson<Summary>(`/api/prompts/import?mode=${mode}`, sendJson("POST", parsed)),
       );
-      // Pull the merged collection back so the grid reflects it without a reload.
-      const fresh = await fetchJson<{ prompts: Prompt[] }>("/api/prompts");
-      onImported(fresh.prompts);
-      router.refresh();
+      try {
+        // The new collection, swapped into the grid in place. Not
+        // router.refresh(): the library starts over on every server render,
+        // and this summary would vanish with it the moment it appeared.
+        onImported((await fetchJson<{ prompts: Prompt[] }>("/api/prompts")).prompts);
+      } catch {
+        // The import worked; only the reread failed. Its error used to show
+        // beside the summary, as if the import had not. Refresh instead.
+        router.refresh();
+      }
     } catch (err) {
-      setError(errorMessage(err, "Could not read that file."));
+      setError(err instanceof ApiError && err.status === 413 ? TOO_BIG : errorMessage(err, "Could not read that file."));
     } finally {
       setBusy(false);
     }
@@ -111,20 +137,28 @@ export default function ImportExport({ onImported }: { onImported: (prompts: Pro
       </div>
 
       {summary && (
-        <p className="mt-2 text-xs text-muted">
-          {summary.added} added, {summary.updated} updated
+        <div className="mt-2 text-xs text-muted">
+          <p>
+            {summary.added} added, {summary.updated} updated
+            {summary.skipped.length > 0 && (
+              <>
+                , <span className="text-warning">{summary.skipped.length} skipped</span>
+              </>
+            )}
+            .
+          </p>
+          {/* Why each was skipped: a list of titles alone left the fix a guess. */}
           {summary.skipped.length > 0 && (
-            <>
-              , <span className="text-warning">{summary.skipped.length} skipped</span> (
-              {summary.skipped
-                .slice(0, 3)
-                .map((s) => s.title)
-                .join(", ")}
-              {summary.skipped.length > 3 ? "…" : ""})
-            </>
+            <ul className="mt-1 space-y-0.5">
+              {summary.skipped.slice(0, SKIPS_SHOWN).map((s, i) => (
+                <li key={i}>
+                  <span className="text-foreground">{s.title}</span> — {s.reason}
+                </li>
+              ))}
+              {summary.skipped.length > SKIPS_SHOWN && <li>…and {summary.skipped.length - SKIPS_SHOWN} more.</li>}
+            </ul>
           )}
-          .
-        </p>
+        </div>
       )}
       {error && <p className="mt-2 text-xs text-danger">{error}</p>}
     </div>

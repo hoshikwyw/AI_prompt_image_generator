@@ -36,7 +36,8 @@ export default function CodeTabs({ samples, label }: { samples: CodeSample[]; la
   }
 
   async function copy() {
-    showToast((await copyText(sample.code)) ? "Code copied." : "Could not copy — select the text instead.");
+    if (await copyText(sample.code)) showToast("Code copied.");
+    else showToast("Could not copy — select the text instead.", "error");
   }
 
   return (

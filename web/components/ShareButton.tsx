@@ -13,12 +13,17 @@ export default function ShareButton({ title, text }: { title: string; text?: str
     if (navigator.share) {
       try {
         await navigator.share({ title, text, url });
-      } catch {
-        // Dismissing the sheet throws too; there is nothing to report.
+        return;
+      } catch (err) {
+        // Dismissing the sheet is an AbortError: nothing to report. Anything
+        // else — an embed without share permission, a WebView that offers
+        // share() but refuses it — used to end here too, so the button did
+        // nothing; it falls through to copying the link instead.
+        if (err instanceof DOMException && err.name === "AbortError") return;
       }
-      return;
     }
-    showToast((await copyText(url)) ? "Link copied — share it anywhere." : "Could not copy the link.");
+    if (await copyText(url)) showToast("Link copied — share it anywhere.");
+    else showToast("Could not copy the link.", "error");
   }
 
   return (

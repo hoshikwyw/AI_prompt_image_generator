@@ -7,6 +7,14 @@
  */
 export const TOAST_EVENT = "promptbook:toast";
 
-export function showToast(message: string) {
-  window.dispatchEvent(new CustomEvent<string>(TOAST_EVENT, { detail: message }));
+export type ToastTone = "success" | "error";
+
+export interface ToastDetail {
+  message: string;
+  tone: ToastTone;
+}
+
+/** `tone` picks the icon: a failure used to arrive under a green success tick. */
+export function showToast(message: string, tone: ToastTone = "success") {
+  window.dispatchEvent(new CustomEvent<ToastDetail>(TOAST_EVENT, { detail: { message, tone } }));
 }

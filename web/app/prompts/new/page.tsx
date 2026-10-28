@@ -4,7 +4,7 @@ import PromptForm from "@/components/PromptForm";
 import { isAdmin } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "New prompt" };
+export const metadata = { title: "New prompt", robots: { index: false, follow: false } };
 
 export default async function NewPromptPage() {
   // The API refuses the write anyway; this just sends you somewhere useful

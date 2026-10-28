@@ -87,6 +87,26 @@ function describe(p: PublicPrompt, index?: number): string {
 
 const text = (body: string) => ({ type: "text" as const, text: body });
 
+/**
+ * A tool body, with failures handled the way the REST API handles them: logged
+ * here, and a plain message to the client. The SDK turns a thrown error into a
+ * result carrying its raw message — a database error, verbatim, to whoever
+ * asked — and logs nothing, so an outage was invisible from the server side.
+ */
+function guarded<A extends unknown[], R>(handler: (...args: A) => Promise<R>) {
+  return async (...args: A) => {
+    try {
+      return await handler(...args);
+    } catch (err) {
+      console.error("MCP tool error:", err);
+      return {
+        content: [text("Promptbook is having trouble right now. Try again in a minute.")],
+        isError: true as const,
+      };
+    }
+  };
+}
+
 export function createPromptbookServer(origin: string): McpServer {
   const server = new McpServer(
     { name: "promptbook", title: "Promptbook", version: "1.0.0" },
@@ -108,11 +128,18 @@ export function createPromptbookServer(origin: string): McpServer {
         query: z.string().max(100).optional().describe("Words to search for, e.g. 'saree', 'anime', 'logo'."),
         ...filterFields,
         tag: z.string().max(40).optional().describe("A tag, e.g. 'photo-edit' for prompts that edit the user's own photo."),
-        limit: z.number().int().min(1).max(25).default(5).describe("How many to return."),
+        // Every match carries its full prompt text, twice (text and structured):
+        // 25 long prompts came to some 300 KB of an assistant's context.
+        limit: z.number().int().min(1).max(10).default(5).describe("How many to return."),
       },
       annotations: { ...READ_ONLY, idempotentHint: true },
     },
-    async (args) => {
+    guarded(async (args) => {
+      // "#" normalises to nothing, and an empty tag filter matched everything;
+      // the REST API answers the same input with a 400.
+      if (args.tag && !normalizeTag(args.tag)) {
+        return { content: [text(`"${args.tag}" is not a tag. list_filters shows the tags in use.`)], isError: true };
+      }
       const matches = await listPrompts(toFilter(args));
       const page = await withCovers(matches.slice(0, args.limit));
       const body = page.length
@@ -122,7 +149,7 @@ export function createPromptbookServer(origin: string): McpServer {
         content: [text(body)],
         structuredContent: { total: matches.length, prompts: page },
       };
-    },
+    }),
   );
 
   server.registerTool(
@@ -133,7 +160,7 @@ export function createPromptbookServer(origin: string): McpServer {
       inputSchema: { id: z.string().max(80).describe("The prompt's id, e.g. 'golden-hour-saree'.") },
       annotations: { ...READ_ONLY, idempotentHint: true },
     },
-    async ({ id }) => {
+    guarded(async ({ id }) => {
       const prompt = await getPrompt(id);
       if (!prompt) {
         return { content: [text(`No prompt has the id "${id}". Use search_prompts to find one.`)], isError: true };
@@ -152,7 +179,7 @@ export function createPromptbookServer(origin: string): McpServer {
         .filter(Boolean)
         .join("\n");
       return { content: [text(body)], structuredContent: { prompt: data, related: related.map((r) => r.id) } };
-    },
+    }),
   );
 
   server.registerTool(
@@ -163,14 +190,14 @@ export function createPromptbookServer(origin: string): McpServer {
       inputSchema: filterFields,
       annotations: { ...READ_ONLY, idempotentHint: false },
     },
-    async (args) => {
+    guarded(async (args) => {
       const matches = await listPrompts(toFilter(args));
       if (matches.length === 0) {
         return { content: [text("No prompt matches those filters.")], isError: true };
       }
       const [pick] = await withCovers([matches[Math.floor(Math.random() * matches.length)]]);
       return { content: [text(describe(pick))], structuredContent: { prompt: pick } };
-    },
+    }),
   );
 
   server.registerTool(
@@ -180,7 +207,7 @@ export function createPromptbookServer(origin: string): McpServer {
       description: "The categories, audiences, AI tools and most-used tags, with how many prompts each has.",
       annotations: { ...READ_ONLY, idempotentHint: true },
     },
-    async () => {
+    guarded(async () => {
       const prompts = await listPrompts();
       const data = {
         categories: CATEGORIES.map((id) => ({ id, label: CATEGORY_LABELS[id], count: prompts.filter((p) => p.category === id).length })),
@@ -198,7 +225,7 @@ export function createPromptbookServer(origin: string): McpServer {
         `Top tags: ${line(data.tags)}`,
       ].join("\n");
       return { content: [text(body)], structuredContent: data };
-    },
+    }),
   );
 
   return server;

@@ -118,7 +118,24 @@ export default function Select<T extends string>({
     }
   }
 
+  // Type-to-jump, as a native select does: "f" lands on Fashion instead of a
+  // keyboard user stepping through every option to reach it. Letters typed
+  // within half a second build one search ("fo" → Food).
+  const typed = useRef({ text: "", at: 0 });
+  function typeahead(key: string) {
+    const now = Date.now();
+    const text = (now - typed.current.at < 500 ? typed.current.text : "") + key.toLowerCase();
+    typed.current = { text, at: now };
+    const match = options.findIndex((o) => o.label.toLowerCase().startsWith(text));
+    if (match !== -1) setActive(match);
+  }
+
   function onListKeyDown(event: React.KeyboardEvent) {
+    if (event.key.length === 1 && event.key !== " " && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      event.preventDefault();
+      typeahead(event.key);
+      return;
+    }
     switch (event.key) {
       case "ArrowDown":
         event.preventDefault();

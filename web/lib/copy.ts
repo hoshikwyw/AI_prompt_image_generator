@@ -18,8 +18,11 @@ export async function copyText(text: string): Promise<boolean> {
     // Permission denied or insecure context — try the old way instead.
   }
 
+  // select() moves focus into the helper field, and removing it then dropped
+  // focus to the page top — a keyboard user lost their place on every copy.
+  const focused = document.activeElement as HTMLElement | null;
+  const area = document.createElement("textarea");
   try {
-    const area = document.createElement("textarea");
     area.value = text;
     area.setAttribute("readonly", "");
     // Off-screen rather than hidden: display:none cannot be selected, and iOS
@@ -33,11 +36,13 @@ export async function copyText(text: string): Promise<boolean> {
     // iOS Safari ignores select() on a readonly field without this.
     area.setSelectionRange(0, text.length);
 
-    const ok = document.execCommand("copy");
-    document.body.removeChild(area);
-    if (ok) return true;
+    if (document.execCommand("copy")) return true;
   } catch {
     // Nothing left to try; the caller falls back to showing the text.
+  } finally {
+    // Also when execCommand throws, which used to leave the field behind.
+    area.remove();
+    focused?.focus?.({ preventScroll: true });
   }
 
   return false;

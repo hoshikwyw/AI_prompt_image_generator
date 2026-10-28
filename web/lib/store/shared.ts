@@ -95,7 +95,8 @@ export function readImportItem(
   if (!ok) {
     return {
       ok: false,
-      title: String(raw.title ?? "(untitled)").slice(0, 80),
+      // An empty title too: it showed as a blank in the skipped list.
+      title: ((typeof raw.title === "string" && raw.title.trim()) || "(untitled)").slice(0, 80),
       reason: Object.values(errors).join(" "),
     };
   }

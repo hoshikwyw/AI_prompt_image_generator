@@ -42,6 +42,9 @@ const field = "field";
  * catches the obvious cases without inventing a second, drifting set of rules.
  * The server still validates; this only saves a round trip.
  */
+/** Fields that show their own message, in the order they appear. */
+const FIELD_ERRORS = ["title", "body", "source"];
+
 export default function PromptForm({ prompt }: Props) {
   const router = useRouter();
   const editing = Boolean(prompt);
@@ -113,10 +116,7 @@ export default function PromptForm({ prompt }: Props) {
 
     const candidate = { ...draft, tags: parsedTags };
     const check = validateDraft(candidate);
-    if (!check.ok) {
-      setErrors(check.errors);
-      return;
-    }
+    if (!check.ok) return showErrors(check.errors);
 
     setSubmitting(true);
     setErrors({});
@@ -133,9 +133,9 @@ export default function PromptForm({ prompt }: Props) {
     } catch (err) {
       // A 422 carries per-field messages, the same shape validateDraft returns.
       if (err instanceof ApiError && err.status === 422) {
-        setErrors((err.body as { errors: Errors }).errors);
+        showErrors((err.body as { errors: Errors }).errors);
       } else {
-        setErrors({ form: errorMessage(err, "Could not save the prompt.") });
+        showErrors({ form: errorMessage(err, "Could not save the prompt.") });
       }
       // Only a failure re-enables the form. After a save it stays locked while
       // the page navigates away — re-enabled there, a second Ctrl+Enter would
@@ -144,8 +144,38 @@ export default function PromptForm({ prompt }: Props) {
     }
   }
 
+  /**
+   * Shows the messages and takes the reader to the first one. On a phone Save
+   * is pinned to the foot of the screen, so "Title is required" appeared far
+   * above, out of sight, and the tap looked like it did nothing.
+   */
+  function showErrors(next: Errors) {
+    setErrors(next);
+    requestAnimationFrame(() => {
+      const first = FIELD_ERRORS.find((key) => next[key]);
+      const target = document.getElementById(first ?? "form-error");
+      target?.scrollIntoView({ block: "center", behavior: "smooth" });
+      if (first) target?.focus({ preventScroll: true });
+    });
+  }
+
   const error = (key: string) =>
-    errors[key] ? <p className="mt-1 text-xs text-danger">{errors[key]}</p> : null;
+    errors[key] ? (
+      <p id={`${key}-error`} className="mt-1 text-xs text-danger">
+        {errors[key]}
+      </p>
+    ) : null;
+  // Tied to the field, so a screen reader announces the message with it.
+  const invalid = (key: string) =>
+    errors[key] ? { "aria-invalid": true, "aria-describedby": `${key}-error` } : {};
+  // A message with no place of its own (the server can also report
+  // `models`) goes in the banner, rather than being dropped.
+  const formErrors = [
+    errors.form,
+    ...Object.entries(errors)
+      .filter(([key]) => key !== "form" && !FIELD_ERRORS.includes(key))
+      .map(([, message]) => message),
+  ].filter(Boolean);
 
   return (
     <form
@@ -165,6 +195,7 @@ export default function PromptForm({ prompt }: Props) {
         </label>
         <input
           id="title"
+          {...invalid("title")}
           value={draft.title}
           onChange={(e) => set("title", e.target.value)}
           maxLength={MAX.title}
@@ -199,6 +230,7 @@ export default function PromptForm({ prompt }: Props) {
         </div>
         <textarea
           id="body"
+          {...invalid("body")}
           value={draft.body}
           onChange={(e) => set("body", e.target.value)}
           maxLength={MAX.body}
@@ -317,6 +349,7 @@ export default function PromptForm({ prompt }: Props) {
         </label>
         <input
           id="source"
+          {...invalid("source")}
           value={draft.source}
           onChange={(e) => set("source", e.target.value)}
           maxLength={MAX.source}
@@ -367,9 +400,13 @@ export default function PromptForm({ prompt }: Props) {
         </div>
       </fieldset>
 
-      {errors.form && (
-        <p className="rounded-xl border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger">
-          {errors.form}
+      {formErrors.length > 0 && (
+        <p
+          id="form-error"
+          role="alert"
+          className="rounded-xl border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger"
+        >
+          {formErrors.join(" ")}
         </p>
       )}
 

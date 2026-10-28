@@ -83,11 +83,14 @@ const PAGINATION = [
     label: "JavaScript",
     code: code`
 // Every prompt, 100 at a time. Follow meta.nextCursor until it is null.
+// sort=oldest: the default, most copied, reorders as people copy, so a
+// prompt could move between pages mid-walk and be seen twice or not at all.
 const all = [];
 let cursor = null;
 do {
   const url = new URL("${BASE}/prompts");
   url.searchParams.set("limit", "100");
+  url.searchParams.set("sort", "oldest");
   if (cursor) url.searchParams.set("cursor", cursor);
   const { data, meta } = await (await fetch(url)).json();
   all.push(...data);
@@ -99,9 +102,11 @@ do {
     code: code`
 import requests
 
+# sort=oldest keeps the order fixed while you page; the default, most
+# copied, can shift between requests.
 prompts, cursor = [], None
 while True:
-    params = {"limit": 100, **({"cursor": cursor} if cursor else {})}
+    params = {"limit": 100, "sort": "oldest", **({"cursor": cursor} if cursor else {})}
     page = requests.get("${BASE}/prompts", params=params).json()
     prompts += page["data"]
     cursor = page["meta"]["nextCursor"]
@@ -280,7 +285,9 @@ export default async function ApiDocsPage() {
             ))}
           </div>
           <p>
-            To get everything, follow <C>meta.nextCursor</C> until it is <C>null</C>:
+            To get everything, follow <C>meta.nextCursor</C> until it is <C>null</C>, with{" "}
+            <C>sort=oldest</C> so the order cannot shift while you page — or take the whole set in
+            one file from <C>/export.json</C>:
           </p>
           <CodeTabs label="Pagination language" samples={PAGINATION} />
         </Section>

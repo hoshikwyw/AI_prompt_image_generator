@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }: PageProps<"/prompts/[id]/edit">) {
   const { id } = await params;
   const prompt = await getPrompt(id);
-  return { title: prompt ? `Editing ${prompt.title}` : "Prompt not found" };
+  return { title: prompt ? `Editing ${prompt.title}` : "Prompt not found", robots: { index: false, follow: false } };
 }
 
 export default async function EditPromptPage({ params }: PageProps<"/prompts/[id]/edit">) {

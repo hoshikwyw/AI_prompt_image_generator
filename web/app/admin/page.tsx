@@ -6,7 +6,9 @@ import BackLink from "@/components/BackLink";
 import { isAdmin, storageIsReadOnly, writePolicy } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Admin" };
+// robots.txt only stops crawling; every header links here, so a search engine
+// could still list the bare URL. This keeps it out of results.
+export const metadata = { title: "Admin", robots: { index: false, follow: false } };
 
 /**
  * Where to go after signing in — only ever a path on this site, so a crafted

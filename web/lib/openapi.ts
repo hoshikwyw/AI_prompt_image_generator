@@ -33,7 +33,9 @@ const errors = {
   "429": { $ref: "#/components/responses/TooManyRequests" },
 };
 
-const FILTERS = ["q", "category", "for", "ai", "tag", "featured", "sort"].map(param);
+// The aliases are listed too, marked deprecated, so a generated client can
+// send what the API accepts rather than finding them only in prose.
+const FILTERS = ["q", "category", "for", "ai", "tag", "featured", "sort", "audience", "tool", "favorites"].map(param);
 
 export function openApiSpec(origin: string) {
   const spec = {
@@ -139,7 +141,9 @@ export function openApiSpec(origin: string) {
           operationId: "getRandomPrompt",
           summary: "A random prompt",
           description: "One random prompt, optionally narrowed with the same filters as `/prompts`.",
-          parameters: FILTERS.filter((p) => p.$ref !== param("sort").$ref),
+          // `sort` is validated like every filter, so it is listed, though a
+          // random pick ignores the order.
+          parameters: FILTERS,
           responses: {
             "200": json(
               { type: "object", required: ["data"], properties: { data: ref("Prompt") } },
@@ -260,6 +264,7 @@ export function openApiSpec(origin: string) {
               content: { "image/webp": {}, "image/*": {} },
             },
             "404": { $ref: "#/components/responses/NotFound" },
+            "429": errors["429"],
           },
         },
       },
@@ -312,6 +317,27 @@ export function openApiSpec(origin: string) {
           name: "featured",
           in: "query",
           description: "`true` for editor's picks only. `favorites` (the site's name) is accepted as an alias.",
+          schema: { type: "string", enum: ["true", "false", "1", "0"] },
+        },
+        audience: {
+          name: "audience",
+          in: "query",
+          deprecated: true,
+          description: "Alias of `for`.",
+          schema: { type: "string", enum: [...AUDIENCE_FILTERS] },
+        },
+        tool: {
+          name: "tool",
+          in: "query",
+          deprecated: true,
+          description: "Alias of `ai`.",
+          schema: { type: "string", enum: [...AI_TOOLS] },
+        },
+        favorites: {
+          name: "favorites",
+          in: "query",
+          deprecated: true,
+          description: "Alias of `featured`.",
           schema: { type: "string", enum: ["true", "false", "1", "0"] },
         },
         sort: {
