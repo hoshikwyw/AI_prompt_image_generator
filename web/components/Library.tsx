@@ -225,6 +225,9 @@ export default function Library({
   // editor's picks — and a filter for picks that do not exist is a dead end.
   // It stays while active, so a link that turned it on can turn it off.
   const starLabel = canEdit ? "Favourites" : "Editor's picks";
+  // The star filter on with nothing starred at all: "try a different
+  // audience or AI" would point at the wrong filter.
+  const noStars = Boolean(filter.favoritesOnly) && !prompts.some((p) => p.favorite);
   const showStarFilter =
     canEdit || Boolean(filter.favoritesOnly) || prompts.some((p) => p.favorite);
 
@@ -422,16 +425,22 @@ export default function Library({
           <p className="text-base font-medium">
             {prompts.length === 0
               ? "Your collection is empty"
-              : filter.q
-                ? `No prompts match “${filter.q}”`
-                : "Nothing matches those filters"}
+              : noStars
+                ? `No ${starLabel.toLowerCase()} yet`
+                : filter.q
+                  ? `No prompts match “${filter.q}”`
+                  : "Nothing matches those filters"}
           </p>
           <p className="mx-auto mt-1.5 max-w-sm text-sm text-muted">
             {prompts.length === 0
               ? "Add the first one to get started."
-              : filter.q
-                ? "Try a shorter word — saree, anime, logo — or clear the filters."
-                : "Try a different audience or AI, or clear the filters."}
+              : noStars
+                ? canEdit
+                  ? "Star a prompt with ☆ and it will be kept here."
+                  : "None have been picked yet — clear the filters to see every prompt."
+                : filter.q
+                  ? "Try a shorter word — saree, anime, logo — or clear the filters."
+                  : "Try a different audience or AI, or clear the filters."}
           </p>
           {prompts.length === 0 && canEdit && (
             <Link href="/prompts/new" className="btn btn-primary mt-5">

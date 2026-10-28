@@ -385,6 +385,14 @@
     background: var(--surface-raised);
   }
 
+  /* A field with an error says so on the field itself, not only in the line
+     of red text under it — which is easy to miss beside a long form. */
+  .field[aria-invalid="true"],
+  .field[aria-invalid="true"]:hover,
+  .field[aria-invalid="true"]:focus {
+    border-color: var(--danger);
+  }
+
   textarea.field {
     min-height: unset;
     resize: vertical;

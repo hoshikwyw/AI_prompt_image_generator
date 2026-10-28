@@ -96,9 +96,14 @@ export default function PromptCard({ prompt, onChange, onTagClick, canEdit, imag
           )}
         </div>
 
-        <p className="line-clamp-3 rounded-xl bg-background/60 p-3 font-mono text-xs leading-relaxed text-subtle">
-          <PromptText text={prompt.body} />
-        </p>
+        {/* Padding on the box, the clamp on the text inside: on one element,
+            overflow is clipped at the padding edge, so half of a fourth line
+            showed through the bottom padding of every card. */}
+        <div className="rounded-xl bg-background/60 p-3">
+          <p className="line-clamp-3 font-mono text-xs leading-relaxed text-subtle">
+            <PromptText text={prompt.body} />
+          </p>
+        </div>
 
         {prompt.tags.length > 0 && (
           <div className="relative z-10 flex flex-wrap items-center gap-1.5">
