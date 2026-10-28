@@ -65,6 +65,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       data-theme={theme === "system" ? undefined : theme}
     >
       <body className="flex min-h-full flex-col">
+        {/* The first stop for Tab: past the header, straight to the page. */}
+        <a href="#main" className="skip-link">
+          Skip to content
+        </a>
         {/* Sticky so the way back to the library is always one tap away on a
             phone, where the page can be very long. */}
         <header className="sticky top-0 z-50 border-b border-line bg-background/80 backdrop-blur-md">
@@ -110,7 +114,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           </div>
         </header>
 
-        <main className="shell w-full flex-1 py-8 sm:py-10 lg:py-12">{children}</main>
+        <main id="main" tabIndex={-1} className="shell w-full flex-1 py-8 outline-none sm:py-10 lg:py-12">
+          {children}
+        </main>
 
         <footer className="mt-8 border-t border-line">
           <div className="shell flex flex-col gap-1.5 py-6 text-xs leading-relaxed text-subtle sm:flex-row sm:items-center sm:justify-between sm:gap-6">

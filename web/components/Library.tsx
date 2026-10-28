@@ -274,10 +274,18 @@ export default function Library({
               type="search"
               value={filter.q ?? ""}
               onChange={(e) => set({ q: e.target.value })}
+              // Escape clears, as it does in most search boxes; only when
+              // there is something to clear, so it never swallows other uses.
+              onKeyDown={(e) => {
+                if (e.key === "Escape" && filter.q) {
+                  e.preventDefault();
+                  set({ q: undefined });
+                }
+              }}
               placeholder="Search saree, anime, logo…"
               aria-label="Search prompts"
               aria-keyshortcuts="/"
-              className="peer field pl-10 sm:pr-10"
+              className="peer field pl-10 pr-10"
             />
             {/* The shortcut, shown where a keyboard is likely and only while
                 the box is empty and unfocused. */}
@@ -288,6 +296,24 @@ export default function Library({
               >
                 /
               </kbd>
+            )}
+            {/* One clear button in every browser: Chrome draws its own on a
+                search field and the others draw none, so the native one is
+                hidden (see globals.css) and this takes its place. */}
+            {filter.q && (
+              <button
+                type="button"
+                onClick={() => {
+                  set({ q: undefined });
+                  searchRef.current?.focus();
+                }}
+                aria-label="Clear search"
+                className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-subtle transition hover:bg-raised hover:text-foreground"
+              >
+                <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
+                  <path d="M4 4l8 8M12 4l-8 8" />
+                </svg>
+              </button>
             )}
           </div>
 

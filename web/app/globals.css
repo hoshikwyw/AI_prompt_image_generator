@@ -205,6 +205,33 @@
     color: var(--foreground);
   }
 
+  /* Out of sight until a keyboard reaches it, then a clear pill in the
+     corner, above the sticky header. */
+  .skip-link {
+    position: fixed;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 100;
+    padding: 0.5rem 0.875rem;
+    border-radius: 9999px;
+    background: var(--foreground);
+    color: var(--background);
+    font-size: 0.875rem;
+    font-weight: 500;
+    transform: translateY(-200%);
+    transition: transform 150ms ease;
+  }
+  .skip-link:focus-visible {
+    transform: none;
+  }
+
+  /* Chrome's own clear button on search fields: the library draws its own,
+     the same in every browser. */
+  input[type="search"]::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
   /* One focus treatment everywhere, keyboard-only, never on mouse clicks. */
   :focus-visible {
     outline: 2px solid var(--accent);
