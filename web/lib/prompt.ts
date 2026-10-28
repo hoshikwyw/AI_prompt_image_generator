@@ -298,8 +298,10 @@ export function slugify(value: string): string {
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60);
+    // Cut, then trim: trimmed first, a cut mid-title could leave a trailing
+    // dash — "…-under-the-city-", and "…-city--2" on a clash.
+    .slice(0, 60)
+    .replace(/^-+|-+$/g, "");
 }
 
 /**
@@ -528,7 +530,9 @@ export function parseFilter(get: (key: string) => string | null | undefined): Pr
       ? (audience as AudienceFilter)
       : "all",
     model: AI_TOOLS.includes(model as AiTool) ? (model as AiTool) : undefined,
-    tag: get("tag")?.trim() || undefined,
+    // Normalised like stored tags, so "?tag=Photo Edit" finds photo-edit
+    // rather than nothing — on the library and the public API alike.
+    tag: normalizeTag(get("tag") ?? "") || undefined,
     favoritesOnly: get("favorites") === "1",
     sort: SORTS.includes(sort as SortKey) ? (sort as SortKey) : DEFAULT_SORT,
   };

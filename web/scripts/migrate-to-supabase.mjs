@@ -6,8 +6,9 @@
  *   npm run supabase:migrate                 upsert prompts, upload missing images
  *   npm run supabase:migrate -- --replace    wipe the remote collection first
  *
- * Safe to run twice. Prompts upsert by id and keep their original `created_at`;
- * images are only uploaded for prompts that have none in Supabase yet, since an
+ * Safe to run twice. Prompts upsert by id and keep their original `created_at`,
+ * their higher copy count and any star; text fields take the local version.
+ * Images are only uploaded for prompts that have none in Supabase yet, since an
  * uploaded image has no natural key to deduplicate on and a second run would
  * otherwise pile up copies.
  *
@@ -97,13 +98,14 @@ async function readAll(query) {
 }
 
 const { data: existing, error: readError } = await readAll(() =>
-  db.from("prompts").select("id, created_at").order("id"),
+  db.from("prompts").select("id, created_at, copies, favorite").order("id"),
 );
 if (readError) {
   console.error(`\nCould not read the remote collection: ${readError.message}\n`);
   process.exit(1);
 }
-const remoteCreatedAt = new Map((existing ?? []).map((r) => [r.id, r.created_at]));
+// Id -> the remote row's created_at, copies and favorite.
+const remoteRows = new Map((existing ?? []).map((r) => [r.id, r]));
 
 const { data: remoteImages, error: imageReadError } = await readAll(() =>
   db.from("prompt_images").select("id, prompt_id, storage_path").order("id"),
@@ -115,23 +117,26 @@ if (imageReadError) {
 const promptsWithImages = new Set((remoteImages ?? []).map((r) => r.prompt_id));
 
 // --- replace ----------------------------------------------------------------
-if (replace && remoteCreatedAt.size > 0) {
-  console.log(`  replace: removing ${remoteCreatedAt.size} remote prompt(s) and their images`);
+if (replace && remoteRows.size > 0) {
+  console.log(`  replace: removing ${remoteRows.size} remote prompt(s) and their images`);
   if (!dryRun) {
-    const paths = (remoteImages ?? []).map((r) => r.storage_path);
-    for (let i = 0; i < paths.length; i += 1000) {
-      await db.storage.from(bucket).remove(paths.slice(i, i + 1000));
-    }
-    // Image rows cascade with the prompts.
+    // Rows first (image rows cascade with the prompts), then the files they
+    // pointed at. The other way round, a failed delete left rows pointing at
+    // files already gone: broken images on the live site.
     const { error } = await db.from("prompts").delete().neq("id", "");
     if (error) {
       console.error(`\nCould not clear the remote collection: ${error.message}\n`);
       process.exit(1);
     }
+    const paths = (remoteImages ?? []).map((r) => r.storage_path);
+    for (let i = 0; i < paths.length; i += 1000) {
+      const { error: storageError } = await db.storage.from(bucket).remove(paths.slice(i, i + 1000));
+      if (storageError) console.log(`  ! could not remove some old image files: ${storageError.message}`);
+    }
   }
   // Outside the dry-run check, so a dry run reports what the real run would:
   // everything added, every image uploaded — not "updated" and "skipped".
-  remoteCreatedAt.clear();
+  remoteRows.clear();
   promptsWithImages.clear();
 }
 
@@ -139,11 +144,22 @@ if (replace && remoteCreatedAt.size > 0) {
 let added = 0;
 let updated = 0;
 const rows = prompts.map((p) => {
-  const remote = remoteCreatedAt.get(p.id);
-  if (remote === undefined) added++;
-  else updated++;
-  // An existing row keeps the creation date it already has.
-  return { ...toRow(p), created_at: remote ?? p.createdAt };
+  const remote = remoteRows.get(p.id);
+  const row = toRow(p);
+  if (remote === undefined) {
+    added++;
+    return { ...row, created_at: p.createdAt };
+  }
+  updated++;
+  // An existing row keeps its creation date, and what visitors did on the live
+  // site survives a re-run: the higher copy count, and a star from either side.
+  // Both used to be reset to the local file's.
+  return {
+    ...row,
+    created_at: remote.created_at,
+    copies: Math.max(row.copies, remote.copies ?? 0),
+    favorite: row.favorite || Boolean(remote.favorite),
+  };
 });
 
 if (!dryRun) {

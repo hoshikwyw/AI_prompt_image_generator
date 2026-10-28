@@ -1,4 +1,4 @@
-import type { Prompt } from "./prompt";
+import { toModels, type Prompt } from "./prompt";
 
 /**
  * First-run contents of the local collection.
@@ -305,6 +305,10 @@ const SEEDS: SeedPrompt[] = [
 export function seedPrompts(): Prompt[] {
   return SEEDS.map((seed, index) => ({
     ...seed,
+    // In AI_TOOLS order, as every saved prompt is. Left as written here, the
+    // first edit of a seed reordered its tools (and with them the paste hint),
+    // and toggling a tool in the form flagged unsaved changes that were none.
+    models: toModels(seed.models),
     source: "",
     favorite: false,
     copies: 0,

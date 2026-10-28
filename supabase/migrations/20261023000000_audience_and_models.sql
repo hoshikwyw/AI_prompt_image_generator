@@ -102,7 +102,7 @@ create index if not exists prompts_audience_idx on public.prompts (audience);
 -- drop it once you are sure you will not:
 --
 --   alter table public.prompts drop column target_model;
-do $
+do $$
 begin
   if exists (
     select 1 from information_schema.columns
@@ -111,4 +111,4 @@ begin
     comment on column public.prompts.target_model is
       'Deprecated: replaced by models. Unused by the app; safe to drop.';
   end if;
-end $;
+end $$;

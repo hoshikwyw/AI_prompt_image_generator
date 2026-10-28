@@ -487,6 +487,10 @@ export const supabaseStore: StoreBackend = {
       // The row is what makes an object reachable, so an orphan is worse than
       // a failed upload: clean it up before reporting.
       await db.storage.from(SUPABASE_BUCKET).remove([storagePath]);
+      // foreign_key_violation: the prompt was deleted while the image was
+      // re-encoded or uploaded. "Not found", as the local store answers it,
+      // not a 500.
+      if (error.code === "23503") return null;
       fail("image insert", error);
     }
     return toPromptImage(data as unknown as ImageRow);
