@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import BackToTop from "./BackToTop";
 import ImportExport from "./ImportExport";
 import PromptCard from "./PromptCard";
+import type { PromptPatch } from "./PromptActions";
 import Select from "./Select";
 import {
   AI_TOOLS,
@@ -151,8 +152,10 @@ export default function Library({
     setFilter({ category: "all", sort: filter.sort });
   };
 
-  const patchPrompt = (id: string, patch: Partial<Prompt>) =>
-    setPrompts((list) => list.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+  const patchPrompt = (id: string, patch: PromptPatch) =>
+    setPrompts((list) =>
+      list.map((p) => (p.id === id ? { ...p, ...(typeof patch === "function" ? patch(p) : patch) } : p)),
+    );
 
   // Only an admin can star a prompt, so to a visitor the stars are the
   // editor's picks — and a filter for picks that do not exist is a dead end.

@@ -74,13 +74,19 @@ export default function SampleImages({
 
   async function remove(image: PromptImage) {
     setError(null);
-    const previous = images;
     setImages((list) => list.filter((i) => i.id !== image.id));
     try {
       await deleteResource(`/api/images/${image.id}`);
       router.refresh();
     } catch (err) {
-      setImages(previous);
+      // Put back this one image, not a snapshot of the whole list: another
+      // delete or an upload may have finished since, and restoring a snapshot
+      // would resurrect or drop those.
+      setImages((list) =>
+        [...list, image].sort(
+          (a, b) => a.position - b.position || a.createdAt.localeCompare(b.createdAt),
+        ),
+      );
       setError(errorMessage(err, "Could not delete that image."));
     }
   }

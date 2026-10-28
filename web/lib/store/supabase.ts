@@ -306,13 +306,6 @@ export const supabaseStore: StoreBackend = {
     const summary: ImportSummary = { added: 0, updated: 0, skipped: [] };
     const db = supabaseWrite();
 
-    if (mode === "replace") {
-      // `neq` on a column that is never null is how PostgREST spells "all rows";
-      // it refuses an unfiltered delete.
-      const { error } = await db.from(TABLE).delete().neq("id", "");
-      if (error) fail("import (clearing)", error);
-    }
-
     // Existing creation dates have to survive an update, and an upsert would
     // overwrite them with whatever the file carries.
     const { data: current, error: readError } = await db
@@ -320,10 +313,17 @@ export const supabaseStore: StoreBackend = {
       .select("id, created_at")
       .limit(MAX_IMPORT);
     if (readError) fail("import (reading)", readError);
+    const existingIds = (current ?? []).map((r) => r.id as string);
 
-    const createdById = new Map((current ?? []).map((r) => [r.id as string, r.created_at as string]));
+    // Replace starts from nothing, so the file's own dates and ids stand.
+    const createdById = new Map(
+      mode === "replace" ? [] : (current ?? []).map((r) => [r.id as string, r.created_at as string]),
+    );
     const taken = new Set(createdById.keys());
-    const rows: Row[] = [];
+    // Keyed by id: a file that names the same id twice becomes one row (the
+    // last wins, as on the local backend). Two rows with one id in a single
+    // upsert are rejected by Postgres outright.
+    const rows = new Map<string, Row>();
 
     for (const raw of items.slice(0, MAX_IMPORT)) {
       const read = readImportItem(raw);
@@ -335,7 +335,10 @@ export const supabaseStore: StoreBackend = {
       const existing = wantedId ? createdById.get(wantedId) : undefined;
 
       if (existing !== undefined) {
-        rows.push(
+        // A repeat of an id already in this batch is the same prompt again.
+        if (!rows.has(wantedId)) summary.updated++;
+        rows.set(
+          wantedId,
           toRow({
             ...draft,
             id: wantedId,
@@ -345,20 +348,39 @@ export const supabaseStore: StoreBackend = {
             updatedAt,
           }),
         );
-        summary.updated++;
         continue;
       }
 
       const id = uniqueId(wantedId || draft.title, taken);
       taken.add(id);
-      rows.push(toRow({ ...draft, id, favorite, copies, createdAt, updatedAt }));
+      createdById.set(id, createdAt);
+      rows.set(id, toRow({ ...draft, id, favorite, copies, createdAt, updatedAt }));
       summary.added++;
     }
 
-    // Chunked so a large file does not become one enormous statement.
-    for (let i = 0; i < rows.length; i += 250) {
-      const { error } = await db.from(TABLE).upsert(rows.slice(i, i + 250), { onConflict: "id" });
+    // Write first, chunked so a large file does not become one huge statement.
+    const batch = [...rows.values()];
+    for (let i = 0; i < batch.length; i += 250) {
+      const { error } = await db.from(TABLE).upsert(batch.slice(i, i + 250), { onConflict: "id" });
       if (error) fail("import (writing)", error);
+    }
+
+    // Only then does replace remove what the file left out. The collection is
+    // never empty part-way, and a failed write above leaves it untouched.
+    if (mode === "replace") {
+      const stale = existingIds.filter((id) => !rows.has(id));
+      for (let i = 0; i < stale.length; i += 200) {
+        const chunk = stale.slice(i, i + 200);
+        // Storage paths first: the cascade removes the rows that record them.
+        const { data: images } = await db.from(IMAGE_TABLE).select("storage_path").in("prompt_id", chunk);
+        const { error } = await db.from(TABLE).delete().in("id", chunk);
+        if (error) fail("import (removing old prompts)", error);
+        const paths = (images ?? []).map((r) => r.storage_path as string);
+        if (paths.length > 0) {
+          const { error: storageError } = await db.storage.from(SUPABASE_BUCKET).remove(paths);
+          if (storageError) console.error(`Orphaned ${paths.length} object(s): ${storageError.message}`);
+        }
+      }
     }
 
     return summary;
@@ -441,7 +463,9 @@ export const supabaseStore: StoreBackend = {
     if (error) fail("image lookup", error);
     if (!data) return null;
 
-    const res = await fetch(publicImageUrl(data.storage_path as string));
+    const res = await fetch(publicImageUrl(data.storage_path as string), {
+      signal: AbortSignal.timeout(10_000),
+    });
     if (!res.ok) return null;
     return {
       bytes: Buffer.from(await res.arrayBuffer()),

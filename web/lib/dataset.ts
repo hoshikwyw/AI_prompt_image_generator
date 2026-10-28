@@ -17,15 +17,26 @@ const CSV_COLUMNS = [
   "audience", "tools", "tags", "source", "featured", "copies", "image", "createdAt", "updatedAt",
 ] as const;
 
-/** RFC 4180: quote every field, double any quote inside. Lists join with " | ". */
+/**
+ * RFC 4180: quote every field, double any quote inside. Lists join with " | ".
+ *
+ * A text cell starting with = + - @ (or a tab or carriage return) is run as a
+ * formula when the file is opened in Excel or Sheets — so a prompt could carry
+ * one into a stranger's spreadsheet. Those get a leading apostrophe, which
+ * spreadsheets read as "this is text" and hide. Numbers and booleans are left
+ * alone.
+ */
 function cell(value: unknown): string {
-  const text = Array.isArray(value)
+  let text = Array.isArray(value)
     ? value.join(" | ")
     : value && typeof value === "object" && "url" in value
       ? String((value as { url: string }).url)
       : value === null || value === undefined
         ? ""
         : String(value);
+  if (typeof value !== "number" && typeof value !== "boolean" && /^[=+\-@\t\r]/.test(text)) {
+    text = `'${text}`;
+  }
   return `"${text.replace(/"/g, '""')}"`;
 }
 

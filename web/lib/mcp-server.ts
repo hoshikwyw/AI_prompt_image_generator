@@ -10,6 +10,7 @@ import {
   AUDIENCE_LABELS,
   CATEGORIES,
   CATEGORY_LABELS,
+  normalizeTag,
   relatedPrompts,
   tagCounts,
   type PromptFilter,
@@ -60,7 +61,8 @@ const toFilter = (args: {
   category: args.category,
   audience: args.audience,
   model: args.tool,
-  tag: args.tag?.trim().toLowerCase() || undefined,
+  // Normalised like the REST API and the stored tags: "Photo Edit" finds photo-edit.
+  tag: args.tag ? normalizeTag(args.tag) || undefined : undefined,
 });
 
 /** A prompt as chat-readable text: the fields an assistant needs to pass on. */

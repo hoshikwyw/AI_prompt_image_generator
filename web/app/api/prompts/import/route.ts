@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/admin";
 import { NO_STORE, errorResponse, readJson } from "@/lib/http";
 import { MAX_IMPORT, importPrompts } from "@/lib/store";
+import { readImportItem } from "@/lib/store/shared";
 
 export const runtime = "nodejs";
 
@@ -19,11 +20,10 @@ export async function POST(request: Request) {
   const body = await readJson(request);
   if (body instanceof Response) return body;
 
-  const items = Array.isArray(body)
-    ? body
-    : Array.isArray((body as { prompts?: unknown }).prompts)
-      ? ((body as { prompts: unknown[] }).prompts)
-      : null;
+  // `null` and plain values are valid JSON too; they must get the same 422 as
+  // any other wrong shape, not a TypeError from reading `.prompts` off them.
+  const wrapped = typeof body === "object" && body !== null ? (body as { prompts?: unknown }) : {};
+  const items = Array.isArray(body) ? body : Array.isArray(wrapped.prompts) ? wrapped.prompts : null;
 
   if (!items) {
     return errorResponse("Expected an array of prompts, or an object with a `prompts` array.", 422);
@@ -33,6 +33,16 @@ export async function POST(request: Request) {
   }
 
   const mode = new URL(request.url).searchParams.get("mode") === "replace" ? "replace" : "merge";
+
+  // Replace discards the whole collection first. A file in which nothing is
+  // valid — the wrong file, a broken export — would leave it empty, so that
+  // is refused before anything is touched.
+  if (mode === "replace" && !items.some((item) => readImportItem(item).ok)) {
+    return errorResponse(
+      "Nothing in this file is a valid prompt, so the collection was left as it is.",
+      422,
+    );
+  }
   const summary = await importPrompts(items, mode);
 
   return Response.json({ mode, ...summary }, { headers: NO_STORE });

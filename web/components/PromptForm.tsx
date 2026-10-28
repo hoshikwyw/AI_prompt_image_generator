@@ -119,7 +119,9 @@ export default function PromptForm({ prompt }: Props) {
       } else {
         setErrors({ form: errorMessage(err, "Could not save the prompt.") });
       }
-    } finally {
+      // Only a failure re-enables the form. After a save it stays locked while
+      // the page navigates away — re-enabled there, a second Ctrl+Enter would
+      // create the prompt again under a new id.
       setSubmitting(false);
     }
   }

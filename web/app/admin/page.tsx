@@ -3,17 +3,36 @@ import AdminLogin from "@/components/AdminLogin";
 import AdminSignOut from "@/components/AdminSignOut";
 import ApiUsage from "@/components/ApiUsage";
 import BackLink from "@/components/BackLink";
-import { isAdmin, writePolicy } from "@/lib/admin";
+import { isAdmin, storageIsReadOnly, writePolicy } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Admin" };
 
+/**
+ * Where to go after signing in — only ever a path on this site, so a crafted
+ * ?next= cannot bounce someone to a look-alike page once they trust the login.
+ *
+ * Resolved the way a browser would, not judged by its first characters:
+ * "/\evil.com" and "/<tab>/evil.com" both start with one slash, yet a browser
+ * reads them as "//evil.com" — another site. And the resolved path is checked
+ * too, because "/..//evil.com" resolves to the path "//evil.com", which is
+ * itself a link to another site.
+ */
+function sameSitePath(raw: string): string {
+  const base = "http://same-site.invalid";
+  try {
+    const url = new URL(raw, base);
+    const path = `${url.pathname}${url.search}${url.hash}`;
+    const local = raw.startsWith("/") && url.origin === base && !/^\/[\\/]/.test(path);
+    return local ? path : "/";
+  } catch {
+    return "/";
+  }
+}
+
 export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
   const params = await searchParams;
-  // Only same-site paths, so a crafted ?next= cannot bounce someone off-site
-  // after they sign in.
-  const raw = typeof params.next === "string" ? params.next : "/";
-  const next = raw.startsWith("/") && !raw.startsWith("//") ? raw : "/";
+  const next = sameSitePath(typeof params.next === "string" ? params.next : "/");
 
   const policy = writePolicy();
   const signedIn = await isAdmin();
@@ -36,11 +55,20 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
       {policy === "locked" && (
         <div className="rounded-[var(--radius-lg)] border border-warning-border bg-warning-soft px-5 py-4 text-sm">
           <p className="font-medium text-warning">Editing is disabled</p>
-          <p className="mt-1 text-muted">
-            This collection lives in Supabase, where anyone could reach it, and no{" "}
-            <code className="font-mono">ADMIN_PASSPHRASE</code> is set. Set one in{" "}
-            <code className="font-mono">.env.local</code> and restart to enable editing.
-          </p>
+          {storageIsReadOnly() ? (
+            <p className="mt-1 text-muted">
+              This deployment has no database, and its file system is read-only, so it shows the
+              built-in prompts and cannot save changes. Connect Supabase (
+              <code className="font-mono">SUPABASE_URL</code> and keys) to edit here, or change{" "}
+              <code className="font-mono">web/lib/seed.ts</code> and redeploy.
+            </p>
+          ) : (
+            <p className="mt-1 text-muted">
+              This collection lives in Supabase, where anyone could reach it, and no{" "}
+              <code className="font-mono">ADMIN_PASSPHRASE</code> is set. Set one in{" "}
+              <code className="font-mono">.env.local</code> and restart to enable editing.
+            </p>
+          )}
         </div>
       )}
 

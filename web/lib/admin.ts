@@ -27,7 +27,16 @@ const SESSION_DAYS = 30;
 
 export type WritePolicy = "open" | "gated" | "locked";
 
+/**
+ * True on a serverless host using the local JSON backend — Vercel without
+ * Supabase. Its file system is read-only, so every write would fail; better to
+ * say so up front than to offer an editor whose every save ends in a 500.
+ */
+export const storageIsReadOnly = (): boolean =>
+  activeBackend() === "disk" && Boolean(process.env.VERCEL);
+
 export function writePolicy(): WritePolicy {
+  if (storageIsReadOnly()) return "locked";
   if (passphrase) return "gated";
   return activeBackend() === "supabase" ? "locked" : "open";
 }
@@ -86,8 +95,9 @@ export async function requireAdmin(): Promise<Response | null> {
   if (writePolicy() === "locked") {
     return Response.json(
       {
-        error:
-          "Editing is disabled: this collection is shared, and no ADMIN_PASSPHRASE is set. Set one to enable it.",
+        error: storageIsReadOnly()
+          ? "Editing is disabled: this deployment has no database, and its file system is read-only. Connect Supabase to edit here, or change web/lib/seed.ts and redeploy."
+          : "Editing is disabled: this collection is shared, and no ADMIN_PASSPHRASE is set. Set one to enable it.",
       },
       { status: 403 },
     );
@@ -104,8 +114,28 @@ const ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
 const MAX_ATTEMPTS = 10;
 const attempts = new Map<string, { count: number; resetAt: number }>();
 
+/**
+ * Bounds on the map. Expired windows were only ever replaced when the same
+ * address came back, so a stream of attempts from fresh addresses grew it
+ * forever. Past SWEEP_AT entries the expired ones are dropped; at MAX_TRACKED
+ * the oldest goes (a Map iterates in insertion order).
+ */
+const SWEEP_AT = 1_000;
+const MAX_TRACKED = 10_000;
+
+function prune(now: number) {
+  if (attempts.size < SWEEP_AT) return;
+  for (const [key, entry] of attempts) if (entry.resetAt < now) attempts.delete(key);
+  while (attempts.size >= MAX_TRACKED) {
+    const oldest = attempts.keys().next().value;
+    if (oldest === undefined) break;
+    attempts.delete(oldest);
+  }
+}
+
 export function throttle(key: string): { allowed: boolean; retryInSeconds: number } {
   const now = Date.now();
+  prune(now);
   const entry = attempts.get(key);
 
   if (!entry || entry.resetAt < now) {

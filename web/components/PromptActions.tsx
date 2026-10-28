@@ -16,12 +16,19 @@ export function pasteHint(models: AiTool[]): string {
 interface Props {
   prompt: Prompt;
   /** Lets a parent list keep its copy in sync after a mutation. */
-  onChange?: (patch: Partial<Prompt>) => void;
+  onChange?: (patch: PromptPatch) => void;
   /** Favouriting writes to the shared collection, so it is gated. Copying is not. */
   canEdit?: boolean;
 }
 
 type CopyState = "idle" | "copied" | "failed";
+
+/**
+ * A change for the parent list to apply: fixed values, or a function of the
+ * list's current prompt for changes that must build on the latest value (a
+ * copy count bumped twice in quick succession).
+ */
+export type PromptPatch = Partial<Prompt> | ((current: Prompt) => Partial<Prompt>);
 
 /**
  * Copy and favourite, the two things you do to a prompt in a library.
@@ -35,8 +42,13 @@ export default function PromptActions({
   onChange,
   canEdit = false,
 }: Props) {
-  const [favorite, setFavorite] = useState(prompt.favorite);
-  const [copies, setCopies] = useState(prompt.copies);
+  // In the library the list owns the star (an import can change it under a
+  // card that stays mounted), so it is read straight from the prompt. On a
+  // page without a list, this component keeps its own copy.
+  const [ownFavorite, setOwnFavorite] = useState(prompt.favorite);
+  const favorite = onChange ? prompt.favorite : ownFavorite;
+  const setFavorite = (value: boolean) =>
+    onChange ? onChange({ favorite: value }) : setOwnFavorite(value);
   const [copyState, setCopyState] = useState<CopyState>("idle");
   const dialogRef = useRef<HTMLDialogElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
@@ -53,9 +65,9 @@ export default function PromptActions({
   }, [copyState]);
 
   function countCopy() {
-    const next = copies + 1;
-    setCopies(next);
-    onChange?.({ copies: next });
+    // An increment applied to the list's latest value, not "set to N" from
+    // this render's value — two quick copies count two.
+    onChange?.((current) => ({ copies: current.copies + 1 }));
     recordCopy(prompt.id);
   }
 
@@ -74,12 +86,10 @@ export default function PromptActions({
   async function toggleFavorite() {
     const next = !favorite;
     setFavorite(next);
-    onChange?.({ favorite: next });
     try {
       await fetchJson(`/api/prompts/${prompt.id}`, sendJson("PATCH", { favorite: next }));
     } catch {
       setFavorite(!next);
-      onChange?.({ favorite: !next });
     }
   }
 

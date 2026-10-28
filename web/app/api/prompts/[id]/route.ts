@@ -35,6 +35,15 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/prompts/[i
   if (body instanceof Response) return body;
   const patch = (typeof body === "object" && body !== null ? body : {}) as Record<string, unknown>;
 
+  // Starring sends only `favorite`. Writing the merged draft back as well would
+  // replay the fields as they were read above — so an edit saved in another
+  // tab between that read and this write would be silently undone.
+  const draftKeys = Object.keys(toDraft(current));
+  if (typeof patch.favorite === "boolean" && !Object.keys(patch).some((k) => draftKeys.includes(k))) {
+    const updated = await updatePrompt(id, { favorite: patch.favorite });
+    return updated ? Response.json(updated, { headers: NO_STORE }) : notFound();
+  }
+
   const { ok, errors, draft } = validateDraft({ ...toDraft(current), ...patch });
   if (!ok) return Response.json({ errors }, { status: 422 });
 

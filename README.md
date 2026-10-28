@@ -158,6 +158,7 @@ Reading is public — that is the point. Writing depends on what a write would r
 | set | either | Need the passphrase, entered at `/admin` |
 | unset | disk | Open — it is your own machine |
 | unset | Supabase | **Refused.** Shared data is never left editable by whoever finds the URL |
+| either | disk, on Vercel | **Refused.** The file system is read-only, so the site serves the built-in prompts and `/admin` says why |
 
 The `service_role` key behind every write bypasses row-level security, so it is server-only and
 never reaches a browser. The anon key the public pages use can only `select`.

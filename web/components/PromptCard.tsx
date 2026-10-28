@@ -1,5 +1,5 @@
 import Link from "next/link";
-import PromptActions from "./PromptActions";
+import PromptActions, { type PromptPatch } from "./PromptActions";
 import PromptText from "./PromptText";
 import {
   AI_TOOL_LABELS,
@@ -12,7 +12,7 @@ import {
 
 interface Props {
   prompt: Prompt;
-  onChange?: (patch: Partial<Prompt>) => void;
+  onChange?: (patch: PromptPatch) => void;
   /** Filters in place in the library; without it, a tag links to the library. */
   onTagClick?: (tag: string) => void;
   canEdit?: boolean;

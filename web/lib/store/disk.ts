@@ -227,9 +227,10 @@ export const diskStore: StoreBackend = {
   },
 
   async importPrompts(items: unknown[], mode: "merge" | "replace"): Promise<ImportSummary> {
-    return mutate((existing) => {
+    const { summary, orphans } = await serialize(async () => {
+      const current = await readCollection();
       const summary: ImportSummary = { added: 0, updated: 0, skipped: [] };
-      const base = mode === "replace" ? [] : [...existing];
+      const base = mode === "replace" ? [] : [...current.prompts];
       const byId = new Map(base.map((p, index) => [p.id, index]));
 
       for (const raw of items.slice(0, MAX_IMPORT)) {
@@ -261,8 +262,21 @@ export const diskStore: StoreBackend = {
         summary.added++;
       }
 
-      return { prompts: base, result: summary };
+      // Replace drops prompts the file left out. Their images go too: left in
+      // the index they leak files, and resurface on a prompt that is later
+      // imported again under the same id.
+      const kept = new Set(base.map((p) => p.id));
+      await writeCollection({
+        ...current,
+        version: VERSION,
+        prompts: base,
+        images: current.images.filter((i) => kept.has(i.promptId)),
+      });
+      return { summary, orphans: current.images.filter((i) => !kept.has(i.promptId)) };
     });
+
+    await Promise.all(orphans.map((i) => rm(path.join(IMAGE_DIR, i.file), { force: true })));
+    return summary;
   },
 
   async listImages(promptIds: string[]): Promise<Map<string, PromptImage[]>> {
