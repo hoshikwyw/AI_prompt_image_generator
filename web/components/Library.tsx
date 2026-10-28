@@ -469,6 +469,7 @@ export default function Library({
               onTagClick={(tag) => set({ tag: filter.tag === tag ? undefined : tag })}
               canEdit={canEdit}
               image={covers[prompt.id]}
+              highlight={filter.q}
             />
           ))}
         </div>

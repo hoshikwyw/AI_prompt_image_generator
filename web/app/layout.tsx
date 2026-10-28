@@ -22,8 +22,14 @@ export const metadata: Metadata = {
   // Pages set just their own name; the template adds the site's.
   title: { default: "Promptbook — AI image prompts", template: "%s — Promptbook" },
   description,
-  openGraph: { siteName: "Promptbook", type: "website", description },
-  twitter: { card: "summary" },
+  // A generated card (see /og), so a shared link never arrives as bare text.
+  openGraph: {
+    siteName: "Promptbook",
+    type: "website",
+    description,
+    images: [{ url: "/og", width: 1200, height: 630, alt: "Promptbook — ready-to-copy AI image prompts" }],
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 /**

@@ -385,6 +385,17 @@
     background: var(--surface-raised);
   }
 
+  /* A search match on a card: the accent, strong enough to spot while
+     scanning a grid, and distinct from the amber of a [placeholder]. */
+  .search-hit {
+    background: color-mix(in oklab, var(--accent) 22%, transparent);
+    /* Full-strength text, not inherited: in the preview the text is the
+       lightest grey, and on the tint it fell below readable contrast. */
+    color: var(--foreground);
+    border-radius: 0.2em;
+    padding: 0 0.1em;
+  }
+
   /* A field with an error says so on the field itself, not only in the line
      of red text under it — which is easy to miss beside a long form. */
   .field[aria-invalid="true"],

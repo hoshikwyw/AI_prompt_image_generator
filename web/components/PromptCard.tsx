@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Marked from "./Marked";
 import PromptActions, { type PromptPatch } from "./PromptActions";
 import PromptText from "./PromptText";
 import {
@@ -18,6 +19,8 @@ interface Props {
   canEdit?: boolean;
   /** First sample for this prompt, when it has one. */
   image?: PromptImage;
+  /** The library's search words, marked where they appear in the title and summary. */
+  highlight?: string;
 }
 
 /** More than this and the tag row wraps to a second line, unbalancing the grid. */
@@ -49,7 +52,7 @@ function toolsLine(models: AiTool[]): string {
  * on the cover, where they are read first; the body preview below keeps the
  * mono type, because you scan prompts by their opening words.
  */
-export default function PromptCard({ prompt, onChange, onTagClick, canEdit, image }: Props) {
+export default function PromptCard({ prompt, onChange, onTagClick, canEdit, image, highlight }: Props) {
   const extraTags = prompt.tags.length - TAGS_SHOWN;
   const href = `/prompts/${prompt.id}`;
 
@@ -88,11 +91,13 @@ export default function PromptCard({ prompt, onChange, onTagClick, canEdit, imag
               href={href}
               className="transition group-hover:text-accent after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:rounded-(--radius-lg) focus-visible:after:outline-2 focus-visible:after:-outline-offset-2 focus-visible:after:outline-(--accent)"
             >
-              {prompt.title}
+              <Marked text={prompt.title} query={highlight} />
             </Link>
           </h2>
           {prompt.summary && (
-            <p className="mt-1 line-clamp-2 text-sm text-muted">{prompt.summary}</p>
+            <p className="mt-1 line-clamp-2 text-sm text-muted">
+              <Marked text={prompt.summary} query={highlight} />
+            </p>
           )}
         </div>
 
@@ -101,7 +106,7 @@ export default function PromptCard({ prompt, onChange, onTagClick, canEdit, imag
             showed through the bottom padding of every card. */}
         <div className="rounded-xl bg-background/60 p-3">
           <p className="line-clamp-3 font-mono text-xs leading-relaxed text-subtle">
-            <PromptText text={prompt.body} />
+            <PromptText text={prompt.body} highlight={highlight} />
           </p>
         </div>
 

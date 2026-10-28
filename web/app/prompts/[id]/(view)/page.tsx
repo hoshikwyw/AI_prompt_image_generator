@@ -49,9 +49,13 @@ export async function generateMetadata({ params }: PageProps<"/prompts/[id]">) {
       title: prompt.title,
       description,
       type: "article",
-      ...(cover && { images: [{ url: cover.url, alt: cover.caption || prompt.title }] }),
+      // The first sample when there is one — the picture is what gets the tap —
+      // and otherwise a card drawn from the title on the prompt's own colour.
+      images: cover
+        ? [{ url: cover.url, alt: cover.caption || prompt.title }]
+        : [{ url: `/prompts/${prompt.id}/og`, width: 1200, height: 630, alt: prompt.title }],
     },
-    twitter: { card: cover ? "summary_large_image" : "summary" },
+    twitter: { card: "summary_large_image" },
   };
 }
 
@@ -83,10 +87,9 @@ export default async function PromptPage({ params }: PageProps<"/prompts/[id]">)
       : [{ label: "Any AI", href: "/?ai=" }]),
   ];
 
-  const meta: Array<[string, string]> = [
-    ["Added", day(prompt.createdAt)],
-    ["Updated", day(prompt.updatedAt)],
-  ];
+  const meta: Array<[string, string]> = [["Added", day(prompt.createdAt)]];
+  // Only when it says something: the same date twice read as clutter.
+  if (day(prompt.updatedAt) !== day(prompt.createdAt)) meta.push(["Updated", day(prompt.updatedAt)]);
   if (prompt.copies > 0) meta.push(["Copied", `${prompt.copies}×`]);
   if (prompt.source) meta.push(["Source", prompt.source]);
 
