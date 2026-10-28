@@ -241,7 +241,9 @@ export default function Library({
 
   return (
     <div>
-      <header className="mb-7 flex flex-col gap-4 sm:mb-9 sm:flex-row sm:items-end sm:justify-between">
+      {/* Side by side only from lg: at tablet width the heading's line squeezed
+          the admin controls onto two rows, leaving "Merge" alone below. */}
+      <header className="mb-7 flex flex-col gap-4 sm:mb-9 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
             Image prompts

@@ -93,7 +93,7 @@ export default function ImportExport({ onImported }: { onImported: (prompts: Pro
   }
 
   return (
-    <div className="text-sm">
+    <div className="shrink-0 text-sm">
       <div className="flex flex-wrap items-center gap-2">
         {/* A real navigation, not a client-side one: the browser has to see the
             response headers for the download to happen. */}
