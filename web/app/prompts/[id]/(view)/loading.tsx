@@ -3,9 +3,9 @@
  * while the prompt is read. Shaped like the page it stands in for.
  *
  * In a route group so the edit page, which sits under the same `[id]`, does not
- * flash this layout. One trade-off: the response now streams, so an unknown id
- * is answered with the not-found page under a 200 status rather than a 404 —
- * Next marks that page noindex, which is what matters for a missing prompt.
+ * flash this layout. The response streams, which fixes its status once this
+ * shows — so whether the prompt exists is settled first, in layout.tsx, and an
+ * unknown id still gets a real 404.
  */
 export default function PromptLoading() {
   return (

@@ -1,5 +1,6 @@
 import { cookies, headers } from "next/headers";
 import {
+  ALL_ADDRESSES,
   COOKIE_NAME,
   checkPassphrase,
   clearThrottle,
@@ -29,7 +30,9 @@ export async function POST(request: Request) {
   }
 
   const key = await clientKey();
-  const { allowed, retryInSeconds } = throttle(key);
+  const perAddress = throttle(key);
+  const overall = throttle(ALL_ADDRESSES);
+  const { allowed, retryInSeconds } = perAddress.allowed ? overall : perAddress;
   if (!allowed) {
     return Response.json(
       { error: `Too many attempts. Try again in ${Math.ceil(retryInSeconds / 60)} minutes.` },

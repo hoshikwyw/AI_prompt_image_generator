@@ -145,25 +145,31 @@ export default function Library({
   }, []);
 
   // Keep the URL shareable without a navigation — this is view state, not a page.
-  // Every query written is remembered, so the effect below can tell this
-  // library's own URL changes from a navigation it did not make.
-  const written = useRef(new Set<string>());
+  // Queries written that the URL has not caught up with yet, oldest first, so
+  // the effect below can tell this library's own changes from a navigation.
+  const pending = useRef<string[]>([]);
   useEffect(() => {
     const query = filterToQuery(filter);
-    written.current.add(query);
-    if (written.current.size > 50) written.current.delete(written.current.values().next().value!);
+    pending.current.push(query);
+    if (pending.current.length > 50) pending.current.shift();
     window.history.replaceState(null, "", query ? `/?${query}` : "/");
   }, [filter]);
 
   // A link to the library while already on it — the logo, a "/?tag=…" link —
   // changes the URL, but Next serves its cached render and this component
   // keeps its state, so the grid stayed filtered under a URL that said
-  // otherwise. A query the library never wrote came from such a navigation.
-  // (Checked against everything written, not only the last: the URL catches
-  // up a beat late, and mid-typing it can still show an earlier keystroke.)
+  // otherwise. A query that is not one of ours still in flight came from such
+  // a navigation. The URL catches up a beat late and can skip keystrokes, so
+  // seeing one write also settles every write before it — which is why a set
+  // of everything ever written would not do: the empty query from page load
+  // stayed in it, and the logo's "/" was mistaken for our own.
   const urlQuery = searchParams.toString();
   useEffect(() => {
-    if (written.current.has(urlQuery)) return;
+    const at = pending.current.indexOf(urlQuery);
+    if (at !== -1) {
+      pending.current.splice(0, at + 1);
+      return;
+    }
     // Syncing from the URL, an external system, is what an effect is for.
     setFilter(filterFromUrl(new URLSearchParams(urlQuery), savedPrefs));
     // savedPrefs is read, not tracked: a new choice is not a navigation.
@@ -190,10 +196,30 @@ export default function Library({
     setFilter({ category: "all", sort: filter.sort });
   };
 
-  const patchPrompt = (id: string, patch: PromptPatch) =>
+  const gridRef = useRef<HTMLDivElement>(null);
+  const countRef = useRef<HTMLSpanElement>(null);
+
+  const patchPrompt = (id: string, patch: PromptPatch) => {
+    // Where keyboard focus is, by card position, in case this patch filters
+    // the card out — unstarring in the Favourites view. Its button then
+    // vanished with focus on it, dropping the reader back to the page top.
+    const cards = Array.from(gridRef.current?.children ?? []);
+    const focusedAt = cards.findIndex((card) => card.contains(document.activeElement));
+
     setPrompts((list) =>
       list.map((p) => (p.id === id ? { ...p, ...(typeof patch === "function" ? patch(p) : patch) } : p)),
     );
+
+    if (focusedAt === -1) return;
+    requestAnimationFrame(() => {
+      if (document.activeElement && document.activeElement !== document.body) return;
+      // The card that took its place, else the one before, else the count.
+      const now = gridRef.current?.children;
+      const next = now?.[focusedAt] ?? now?.[focusedAt - 1];
+      const target = next?.querySelector<HTMLElement>("a[href], button") ?? countRef.current;
+      target?.focus();
+    });
+  };
 
   // Only an admin can star a prompt, so to a visitor the stars are the
   // editor's picks — and a filter for picks that do not exist is a dead end.
@@ -375,7 +401,7 @@ export default function Library({
 
       <div className="mb-4 flex items-center justify-between gap-4 text-sm text-muted">
         {/* Announced as it changes, so a screen reader hears what a filter did. */}
-        <span aria-live="polite">
+        <span aria-live="polite" ref={countRef} tabIndex={-1} className="outline-none">
           <strong className="font-medium text-foreground">{visible.length}</strong>
           {visible.length !== prompts.length && <> of {prompts.length}</>}{" "}
           {prompts.length === 1 ? "prompt" : "prompts"}
@@ -423,7 +449,7 @@ export default function Library({
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-3">
+        <div ref={gridRef} className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-3">
           {visible.map((prompt) => (
             <PromptCard
               key={prompt.id}

@@ -158,7 +158,19 @@ function prune(now: number) {
   }
 }
 
+/**
+ * Wrong guesses across every address together. The per-address count trusts
+ * X-Forwarded-For, which Vercel overwrites but a self-hosted `next start`
+ * passes through from the client — a fresh fake address per attempt meant
+ * unlimited guesses. This cap holds whatever the header says. Someone could
+ * spend it to keep the admin out for a window, but only while actively
+ * guessing, which beats a passphrase that can be brute-forced.
+ */
+export const ALL_ADDRESSES = "*";
+const MAX_ATTEMPTS_ALL = 100;
+
 export function throttle(key: string): { allowed: boolean; retryInSeconds: number } {
+  const max = key === ALL_ADDRESSES ? MAX_ATTEMPTS_ALL : MAX_ATTEMPTS;
   const now = Date.now();
   prune(now);
   const entry = attempts.get(key);
@@ -168,7 +180,7 @@ export function throttle(key: string): { allowed: boolean; retryInSeconds: numbe
     return { allowed: true, retryInSeconds: 0 };
   }
   entry.count++;
-  if (entry.count > MAX_ATTEMPTS) {
+  if (entry.count > max) {
     return { allowed: false, retryInSeconds: Math.ceil((entry.resetAt - now) / 1000) };
   }
   return { allowed: true, retryInSeconds: 0 };

@@ -14,7 +14,8 @@ import {
   filterToQuery,
   relatedPrompts,
 } from "@/lib/prompt";
-import { getPrompt, listImages, listPrompts } from "@/lib/store";
+import { listImages, listPrompts } from "@/lib/store";
+import { loadPrompt } from "./load-prompt";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,7 @@ const libraryLink = (filter: Parameters<typeof filterToQuery>[0]) => {
 
 export async function generateMetadata({ params }: PageProps<"/prompts/[id]">) {
   const { id } = await params;
-  const prompt = await getPrompt(id);
+  const prompt = await loadPrompt(id);
   if (!prompt) return { title: "Prompt not found" };
 
   // What a shared link unfurls into: the title, the one-line summary, and the
@@ -56,7 +57,7 @@ export async function generateMetadata({ params }: PageProps<"/prompts/[id]">) {
 
 export default async function PromptPage({ params }: PageProps<"/prompts/[id]">) {
   const { id } = await params;
-  const prompt = await getPrompt(id);
+  const prompt = await loadPrompt(id);
   if (!prompt) notFound();
   const canEdit = await isAdmin();
   const related = relatedPrompts(prompt, await listPrompts(), RELATED);
