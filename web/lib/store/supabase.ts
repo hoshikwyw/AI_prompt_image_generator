@@ -428,6 +428,27 @@ export const supabaseStore: StoreBackend = {
     return toPromptImage(data as unknown as ImageRow);
   },
 
+  /**
+   * Fetched from the bucket's public URL rather than the storage API, which
+   * would need a storage policy the migration deliberately does not create.
+   */
+  async readImageBytes(imageId: string) {
+    const { data, error } = await supabaseRead()
+      .from(IMAGE_TABLE)
+      .select("storage_path, mime")
+      .eq("id", imageId)
+      .maybeSingle();
+    if (error) fail("image lookup", error);
+    if (!data) return null;
+
+    const res = await fetch(publicImageUrl(data.storage_path as string));
+    if (!res.ok) return null;
+    return {
+      bytes: Buffer.from(await res.arrayBuffer()),
+      mime: (data.mime as string | null) ?? "image/webp",
+    };
+  },
+
   async deleteImage(imageId: string): Promise<boolean> {
     const db = supabaseWrite();
     const { data, error } = await db

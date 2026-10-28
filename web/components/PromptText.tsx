@@ -1,9 +1,4 @@
-/**
- * `[Bracketed]` stretches of a prompt are the parts a reader is meant to change
- * — a colour, a brand name, a dish. Matches one line at most, so a stray `[`
- * cannot highlight the rest of the prompt.
- */
-const PLACEHOLDER = /(\[[^\]\n]{1,80}\])/;
+import { PLACEHOLDER } from "@/lib/prompt";
 
 export const hasPlaceholders = (text: string) => PLACEHOLDER.test(text);
 

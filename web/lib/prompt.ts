@@ -449,6 +449,19 @@ export function filterPrompts(prompts: Prompt[], filter: PromptFilter = {}): Pro
 }
 
 /**
+ * `[Bracketed]` stretches of a prompt are the parts a reader is meant to change
+ * — a colour, a brand name, a dish. One line at most, so a stray `[` cannot
+ * swallow the rest of the prompt. The capture group lets `split` keep them.
+ */
+export const PLACEHOLDER = /(\[[^\]\n]{1,80}\])/;
+
+/** The placeholder texts in a prompt, brackets removed, each once, in order. */
+export function placeholdersIn(text: string): string[] {
+  const found = text.match(new RegExp(PLACEHOLDER.source, "g")) ?? [];
+  return [...new Set(found.map((p) => p.slice(1, -1)))];
+}
+
+/**
  * Prompts to offer under this one. Only ones that suit the same people — a
  * prompt for women never suggests one for men — then the same category first,
  * then the same audience, most copied within each.

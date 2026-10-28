@@ -140,10 +140,11 @@ export interface StoreBackend {
   deleteImage(imageId: string): Promise<boolean>;
 
   /**
-   * Only the local backend serves its own bytes — Supabase images are fetched
-   * straight from the public bucket, so it has no reason to implement this.
+   * An image's bytes, for routes that serve images themselves: the local
+   * backend's only way to show one, and the public API's cached image route,
+   * which keeps repeat views off Supabase's bandwidth allowance.
    */
-  readImageBytes?(imageId: string): Promise<{ bytes: Buffer; mime: string } | null>;
+  readImageBytes(imageId: string): Promise<{ bytes: Buffer; mime: string } | null>;
 }
 
 /** An already-validated, already-re-encoded image on its way into storage. */

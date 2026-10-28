@@ -34,8 +34,9 @@ export const addImage: StoreBackend["addImage"] = (promptId, input) =>
   backend.addImage(promptId, input);
 export const deleteImage: StoreBackend["deleteImage"] = (imageId) => backend.deleteImage(imageId);
 
-/** Null when the backend serves its images from somewhere else entirely. */
-export const readImageBytes = (imageId: string) => backend.readImageBytes?.(imageId) ?? null;
+/** Null when no image has that id, or its bytes cannot be fetched. */
+export const readImageBytes: StoreBackend["readImageBytes"] = (imageId) =>
+  backend.readImageBytes(imageId);
 
 export {
   MAX_IMPORT,
