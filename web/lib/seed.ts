@@ -657,6 +657,238 @@ const SEEDS: SeedPrompt[] = [
       "nearby, a warm gradient background from peach to deep rose, glossy highlights, luxury " +
       "commercial product photography, centred composition --ar 4:5",
   },
+
+  // --- Added 2026-10-30: more for couples, and for pets ------------------------
+  {
+    id: "couple-photo-booth-strip",
+    title: "Photo Booth Strip",
+    summary: "Four silly frames from a vintage photo booth",
+    category: "portrait",
+    audience: "couple",
+    models: ["chatgpt", "gemini"],
+    tags: ["photo-booth", "fun", "photo-edit"],
+    accent: "from-fuchsia-500 to-cyan-500",
+    notes: `${ATTACH} Use a photo where both faces are clearly visible.`,
+    body:
+      "Using the couple in this photo, keep both of their faces exactly the same. Turn it into " +
+      "a vintage photo booth strip of four frames stacked vertically: a cheek kiss, both making " +
+      "silly faces, a forehead touch, and laughing together. Slightly faded black-and-white " +
+      "film, soft flash, a curtain backdrop, white paper border with the date [14.02.2026] " +
+      "printed at the bottom.",
+  },
+  {
+    id: "kyoto-cherry-blossom-couple",
+    title: "Cherry Blossoms in Kyoto",
+    summary: "Strolling under sakura on a quiet temple path",
+    category: "portrait",
+    audience: "couple",
+    models: ["chatgpt", "gemini"],
+    tags: ["travel", "sakura", "photo-edit"],
+    accent: "from-rose-500 to-orange-600",
+    notes: `${ATTACH} Both faces should be clearly visible and well lit.`,
+    body:
+      "Using the couple in this photo, keep both faces exactly the same. Show them walking hand " +
+      "in hand along a quiet stone path in Kyoto in spring, cherry blossom trees in full bloom " +
+      "arching overhead, petals drifting down, a red wooden temple gate in the soft background. " +
+      "Gentle morning light, pastel pink tones, candid romantic travel photography.",
+  },
+  {
+    id: "thingyan-water-festival-couple",
+    title: "Thingyan Water Festival",
+    summary: "Laughing and soaked at Myanmar New Year",
+    category: "portrait",
+    audience: "couple",
+    models: ["chatgpt", "gemini"],
+    tags: ["myanmar", "festival", "photo-edit"],
+    accent: "from-sky-400 to-indigo-600",
+    notes: `${ATTACH} A photo where you are both smiling works best.`,
+    body:
+      "Using the couple in this photo, keep both faces exactly the same. Place them at the " +
+      "Thingyan water festival in Myanmar, laughing as friends splash them with silver bowls of " +
+      "water, both wearing bright festival outfits with padauk flowers tucked in her hair. " +
+      "Sparkling water droplets frozen mid-air, colourful decorated pandals behind them, bright " +
+      "April sunshine, joyful candid photography, fast shutter speed.",
+  },
+  {
+    id: "couple-3d-animated-movie",
+    title: "Couple as 3D Animated Characters",
+    summary: "The two of you in a family-film poster",
+    category: "3d",
+    audience: "couple",
+    models: ["chatgpt", "gemini"],
+    tags: ["3d", "cartoon", "photo-edit"],
+    accent: "from-sky-400 to-indigo-600",
+    notes: ATTACH,
+    body:
+      "Turn the couple in this photo into characters from a 3D animated family film. Keep their " +
+      "hairstyles, clothing colours and recognisable features so they are clearly them. Big " +
+      "expressive eyes, soft stylised proportions, sitting together on a park bench at sunset " +
+      "with a balloon tied to the bench. Warm cinematic lighting, smooth 3D render, movie-poster " +
+      "composition with the title [Our Story] at the top.",
+  },
+  {
+    id: "seventies-retro-couple",
+    title: "1970s Retro Couple",
+    summary: "Groovy film portrait with warm faded colours",
+    category: "fashion",
+    audience: "couple",
+    models: ["chatgpt", "gemini"],
+    tags: ["retro", "70s", "photo-edit"],
+    accent: "from-amber-700 to-yellow-900",
+    notes: ATTACH,
+    body:
+      "Using the couple in this photo, keep both faces exactly the same and restyle them as a " +
+      "couple in the 1970s: flared jeans, a suede fringe jacket, a floral maxi dress, big " +
+      "sunglasses and feathered hair. They lean against a vintage orange car on a desert road. " +
+      "Warm faded film colours, light leaks, soft grain, 35mm film photograph.",
+  },
+  {
+    id: "stargazing-camping-couple",
+    title: "Stargazing Camp Night",
+    summary: "Lying by a tent under the Milky Way",
+    category: "landscape",
+    audience: "couple",
+    models: ["chatgpt", "gemini"],
+    tags: ["camping", "night-sky", "photo-edit"],
+    accent: "from-slate-500 to-slate-700",
+    notes: ATTACH,
+    body:
+      "Using the couple in this photo, keep both faces exactly the same. Show them lying on a " +
+      "blanket beside a glowing tent on a mountain meadow at night, pointing up at a brilliant " +
+      "Milky Way stretching across the sky, a small campfire nearby. Long-exposure night " +
+      "photography, deep blue sky full of stars, warm firelight on their faces.",
+  },
+  {
+    id: "couple-with-pet-portrait",
+    title: "Family Portrait with Your Pet",
+    summary: "The two of you and your furry baby on the sofa",
+    category: "portrait",
+    audience: "couple",
+    models: ["chatgpt", "gemini"],
+    tags: ["pet", "family", "photo-edit"],
+    accent: "from-emerald-500 to-lime-700",
+    notes:
+      "Attach a photo of the two of you and a photo of your pet in the same message, then send " +
+      "the prompt.",
+    body:
+      "Using the couple in the first photo and the pet in the second, keep both faces and the " +
+      "pet's exact fur colour and markings unchanged. Create a cosy family portrait of the three " +
+      "of them on a soft sofa in a bright living room, the pet sitting proudly between them, " +
+      "everyone looking at the camera. Warm natural window light, matching cream knitwear, " +
+      "lifestyle photography, sharp focus.",
+  },
+  {
+    id: "pet-superhero",
+    title: "Pet Superhero",
+    summary: "Your pet in a cape, saving the city",
+    category: "animals",
+    audience: "any",
+    models: ["chatgpt", "gemini"],
+    tags: ["pet", "superhero", "photo-edit"],
+    accent: "from-rose-500 to-orange-600",
+    notes: "Attach a clear photo of your pet's face in the same message.",
+    body:
+      "Using the pet in this photo, keep its face, fur colour and markings exactly the same. " +
+      "Turn it into a superhero flying over a city skyline at sunset, wearing a red cape and a " +
+      "small mask, with a confident expression. Dynamic angle, wind in the fur, cinematic " +
+      "lighting, highly detailed, movie-poster style.",
+  },
+  {
+    id: "pet-passport-photo",
+    title: "Pet Passport Photo",
+    summary: "A very serious official ID photo",
+    category: "animals",
+    audience: "any",
+    models: ["chatgpt", "gemini"],
+    tags: ["pet", "funny", "photo-edit"],
+    accent: "from-slate-500 to-slate-700",
+    notes: "Attach a front-facing photo of your pet. Put its name in the brackets.",
+    body:
+      "Using the pet in this photo, keep its face and markings exactly the same. Make an " +
+      "official-looking passport ID card for it: a straight-on, very serious headshot against a " +
+      "plain light-blue background, with the name [Mochi], species, and a pawprint as the " +
+      "signature. Realistic laminated ID card design with a holographic sheen, funny but " +
+      "believable.",
+  },
+  {
+    id: "pet-watercolour-portrait",
+    title: "Pet Watercolour Portrait",
+    summary: "A soft, framed painting of your pet",
+    category: "art",
+    audience: "any",
+    models: ["chatgpt", "gemini"],
+    tags: ["pet", "watercolour", "photo-edit"],
+    accent: "from-sky-400 to-indigo-600",
+    notes: "Attach a clear photo of your pet.",
+    body:
+      "Paint the pet in this photo as a loose watercolour portrait. Keep its exact fur colours, " +
+      "markings and expression. Soft washes of colour bleeding into white paper, delicate ink " +
+      "outlines around the eyes and nose, splashes of [soft blue and peach] in the background, " +
+      "visible paper texture. Displayed in a simple wooden frame on a white wall.",
+  },
+  {
+    id: "pet-chibi-sticker",
+    title: "Pet Chibi Sticker",
+    summary: "A cute die-cut sticker of your pet",
+    category: "animals",
+    audience: "any",
+    models: ["chatgpt", "gemini"],
+    tags: ["pet", "sticker", "photo-edit"],
+    accent: "from-fuchsia-500 to-cyan-500",
+    notes: "Attach a photo of your pet. Change the pose in the brackets.",
+    body:
+      "Turn the pet in this photo into a cute chibi sticker. Keep its fur colour and markings so " +
+      "it is clearly the same animal. Big round head, tiny body, sparkly eyes, [holding a small " +
+      "heart], simple flat colours with soft shading, a thick white die-cut border, on a plain " +
+      "white background.",
+  },
+  {
+    id: "pet-birthday-party",
+    title: "Pet Birthday Party",
+    summary: "Party hat, cake and confetti",
+    category: "animals",
+    audience: "any",
+    models: ["chatgpt", "gemini"],
+    tags: ["pet", "birthday", "photo-edit"],
+    accent: "from-rose-500 to-orange-600",
+    notes: "Attach a photo of your pet. Put its age in the brackets.",
+    body:
+      "Using the pet in this photo, keep its face and markings exactly the same. Show it at its " +
+      "own birthday party wearing a tiny striped party hat, sitting in front of a pet-friendly " +
+      "cake with a candle shaped like the number [3], balloons and confetti all around. Bright, " +
+      "cheerful colours, soft studio light, sharp focus on the pet's face.",
+  },
+  {
+    id: "cat-cafe-window",
+    title: "Cat in a Café Window",
+    summary: "A sleepy cat in the rain-streaked window of a café",
+    category: "animals",
+    audience: "any",
+    models: ["midjourney", "flux", "stable-diffusion"],
+    tags: ["cat", "cozy", "text-to-image"],
+    accent: "from-amber-700 to-yellow-900",
+    notes: "Text only. Change the breed in the brackets.",
+    body:
+      "A [fluffy orange tabby] cat curled up asleep on the window ledge of a cosy café on a " +
+      "rainy evening, raindrops streaking down the glass, warm golden lights and blurred " +
+      "customers inside, a steaming cup beside the cat, soft bokeh, cinematic and peaceful " +
+      "--ar 4:5",
+  },
+  {
+    id: "dog-beach-sunset",
+    title: "Dog on the Beach at Sunset",
+    summary: "Joyful zoomies along the shoreline",
+    category: "animals",
+    audience: "any",
+    models: ["midjourney", "flux", "leonardo"],
+    tags: ["dog", "beach", "text-to-image"],
+    accent: "from-rose-500 to-orange-600",
+    notes: "Text only. Change the breed in the brackets.",
+    body:
+      "A happy [border collie] running along the shoreline at sunset, ears flying, splashing " +
+      "through shallow waves, golden backlight, sparkling water droplets, low angle at the " +
+      "dog's eye level, fast shutter, joyful pet photography --ar 3:2",
+  },
 ];
 
 export function seedPrompts(): Prompt[] {
