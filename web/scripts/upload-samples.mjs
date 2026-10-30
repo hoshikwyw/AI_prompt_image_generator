@@ -8,6 +8,7 @@
  *   npm run samples:upload                     upload
  *   npm run samples:upload -- --force          also to prompts that have samples
  *   npm run samples:upload -- path/to/folder   another folder (default: samples/)
+ *   npm run samples:upload -- --caption "Made with Gemini"   caption every image
  *
  * Name each file after its prompt's id: `golden-hour-saree.png`, and
  * `golden-hour-saree-2.png` for a second. JPEG, PNG, WebP or AVIF.
@@ -26,7 +27,10 @@ import sharp from "sharp";
 const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run");
 const force = args.includes("--force");
-const folder = path.resolve(args.find((a) => !a.startsWith("--")) ?? "samples");
+// The value after --caption is not the folder.
+const captionAt = args.indexOf("--caption");
+const caption = captionAt === -1 ? "" : (args[captionAt + 1] ?? "");
+const folder = path.resolve(args.find((a, i) => !a.startsWith("--") && i !== captionAt + 1) ?? "samples");
 const base = (process.env.SITE_BASE || "http://localhost:3000").replace(/\/$/, "");
 const passphrase = process.env.ADMIN_PASSPHRASE ?? "";
 
@@ -132,6 +136,8 @@ for (const [id, files] of plan) {
     }
     const form = new FormData();
     form.append("image", new Blob([bytes], { type }), name);
+    // Shown under the picture: says honestly where the sample came from.
+    if (caption) form.append("caption", caption);
     const res = await fetch(`${base}/api/prompts/${id}/images`, { method: "POST", headers: { cookie }, body: form });
     if (res.ok) {
       console.log(`  + ${id}: ${name}`);
