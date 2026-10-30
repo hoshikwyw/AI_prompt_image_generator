@@ -10,6 +10,7 @@
     "lint": "eslint",
     "supabase:check": "node scripts/check-supabase.mjs",
     "supabase:migrate": "node scripts/migrate-to-supabase.mjs",
+    "samples:upload": "node scripts/upload-samples.mjs",
     "icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {

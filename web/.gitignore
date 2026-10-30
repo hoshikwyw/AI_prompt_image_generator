@@ -44,3 +44,6 @@ next-env.d.ts
 
 # local data (prompt collection and sample images)
 .data/
+
+# sample images waiting to be uploaded (npm run samples:upload); they live in storage after
+/samples/
