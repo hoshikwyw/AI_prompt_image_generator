@@ -300,6 +300,363 @@ const SEEDS: SeedPrompt[] = [
       "woven rug, soft morning daylight, calm and minimal, interior design magazine " +
       "photography, wide angle --ar 3:2",
   },
+
+  // --- Added 2026-10-30: more for women, men and couples -----------------------
+  {
+    id: "myanmar-thanaka-portrait",
+    title: "Thanaka Portrait in Bagan",
+    summary: "Traditional Myanmar dress and thanaka among the temples",
+    category: "fashion",
+    audience: "female",
+    models: ["chatgpt", "gemini"],
+    tags: ["myanmar", "traditional", "photo-edit"],
+    accent: "from-amber-700 to-yellow-900",
+    notes: `${ATTACH} Change the htamein colour in the brackets to match an outfit you own.`,
+    body:
+      "Using the woman in this photo, keep her face, skin tone and features exactly the same. " +
+      "Dress her in a traditional Myanmar outfit: a fitted [deep red silk] htamein with a gold " +
+      "woven border and a cream lace eingyi blouse, hair in a neat bun with jasmine flowers. " +
+      "Add soft circles of thanaka paste on her cheeks. Place her among the ancient temples of " +
+      "Bagan at golden hour, warm dusty light, temples fading into the haze behind her, " +
+      "editorial portrait, 85mm lens, shallow depth of field.",
+  },
+  {
+    id: "vintage-hollywood-glamour",
+    title: "Vintage Hollywood Glamour",
+    summary: "1950s black-and-white studio star portrait",
+    category: "portrait",
+    audience: "female",
+    models: ["chatgpt", "gemini"],
+    tags: ["vintage", "black-and-white", "photo-edit"],
+    accent: "from-slate-500 to-slate-700",
+    notes: `${ATTACH} Works best with a photo where your face is turned slightly to one side.`,
+    body:
+      "Turn this photo into a 1950s Hollywood studio glamour portrait. Keep her face and " +
+      "features exactly the same. Soft finger-wave curls, satin evening gown, pearl earrings. " +
+      "Classic black-and-white film look, dramatic butterfly lighting from above, deep shadows, " +
+      "smooth studio backdrop with a soft vignette, fine film grain.",
+  },
+  {
+    id: "y2k-polaroid-selfie",
+    title: "Y2K Polaroid Selfie",
+    summary: "Early-2000s flash photo in a Polaroid frame",
+    category: "portrait",
+    audience: "female",
+    models: ["chatgpt", "gemini"],
+    tags: ["y2k", "retro", "photo-edit"],
+    accent: "from-fuchsia-500 to-cyan-500",
+    notes: `${ATTACH} A casual, close-up selfie gives the most authentic result.`,
+    body:
+      "Recreate this photo as an early-2000s Polaroid snapshot. Keep my face exactly the same. " +
+      "Harsh on-camera flash, slightly washed-out colours, butterfly hair clips, glossy lip " +
+      "gloss, a sparkly baby tee. Inside a white instant-film frame with [Best day ever!] " +
+      "written in marker on the bottom border.",
+  },
+  {
+    id: "kdrama-cafe-scene",
+    title: "K-Drama Café Scene",
+    summary: "Soft, dreamy still from a romance drama",
+    category: "portrait",
+    audience: "female",
+    models: ["chatgpt", "gemini"],
+    tags: ["k-drama", "cinematic", "photo-edit"],
+    accent: "from-sky-400 to-indigo-600",
+    notes: ATTACH,
+    body:
+      "Using the woman in this photo, keep her face exactly the same and place her in a scene " +
+      "from a Korean romance drama. She sits by the window of a cosy café on a rainy afternoon, " +
+      "holding a warm latte, wearing a cream knitted cardigan. Soft diffused window light, " +
+      "pastel colour grade, gentle bokeh of raindrops on the glass, cinematic 16:9 still.",
+  },
+  {
+    id: "flower-crown-dream",
+    title: "Ethereal Flower Crown",
+    summary: "Dreamy portrait in a meadow of wildflowers",
+    category: "fantasy",
+    audience: "female",
+    models: ["midjourney", "flux", "leonardo"],
+    tags: ["dreamy", "flowers", "text-to-image"],
+    accent: "from-rose-500 to-orange-600",
+    notes: "Text only. Change [auburn] to describe the hair you want.",
+    body:
+      "Ethereal portrait of a young woman with long [auburn] hair wearing a crown of wild roses " +
+      "and baby's breath, standing in a misty meadow of wildflowers at dawn, flowing white " +
+      "linen dress, soft backlight glowing through her hair, pastel palette, fine-art " +
+      "photography, dreamy and romantic --ar 4:5",
+  },
+  {
+    id: "magical-girl-anime",
+    title: "Magical Girl Transformation",
+    summary: "You as a sparkling anime magical girl",
+    category: "anime",
+    audience: "female",
+    models: ["chatgpt", "gemini"],
+    tags: ["anime", "magical", "photo-edit"],
+    accent: "from-fuchsia-500 to-cyan-500",
+    notes: `${ATTACH} Change the colour theme in the brackets to your favourite.`,
+    body:
+      "Redraw the woman in this photo as a 1990s-style anime magical girl in mid-transformation. " +
+      "Keep her hairstyle and recognisable facial features. A [pink and gold] outfit with a " +
+      "big ribbon, a crescent-moon wand, swirling ribbons of light and sparkles around her, " +
+      "glittering starry background, cel-shaded anime art with bold outlines.",
+  },
+  {
+    id: "minimal-mirror-outfit",
+    title: "Minimal Outfit Mirror Shot",
+    summary: "Clean, neutral-toned outfit photo for social media",
+    category: "fashion",
+    audience: "female",
+    models: ["chatgpt", "gemini"],
+    tags: ["outfit", "minimal", "photo-edit"],
+    accent: "from-stone-400 to-stone-600",
+    notes: `${ATTACH} Describe the outfit you want in the brackets.`,
+    body:
+      "Using the woman in this photo, keep her face and body shape exactly the same. Show her " +
+      "taking a full-length mirror selfie in a bright, minimal apartment, wearing [a beige " +
+      "trench coat, white tee, straight-leg jeans and white sneakers]. Neutral tones, soft " +
+      "natural window light, clean white walls, a potted olive tree, a quiet-luxury aesthetic.",
+  },
+  {
+    id: "myanmar-taikpon-look",
+    title: "Traditional Taikpon Look",
+    summary: "Myanmar men's traditional dress at Shwedagon",
+    category: "fashion",
+    audience: "male",
+    models: ["chatgpt", "gemini"],
+    tags: ["myanmar", "traditional", "photo-edit"],
+    accent: "from-amber-700 to-yellow-900",
+    notes: `${ATTACH} Change the paso colour in the brackets to suit you.`,
+    body:
+      "Using the man in this photo, keep his face, skin tone and features exactly the same. " +
+      "Dress him in traditional Myanmar men's attire: a crisp white collarless shirt under a " +
+      "light taikpon jacket, a [deep green checked] silk paso, and a neat gaung baung head " +
+      "wrap. Place him on the terrace of the Shwedagon Pagoda at sunset, golden stupa glowing " +
+      "behind him, warm light, respectful and dignified pose, editorial portrait.",
+  },
+  {
+    id: "streetwear-lookbook",
+    title: "Streetwear Lookbook",
+    summary: "Urban fashion shoot on a city rooftop",
+    category: "fashion",
+    audience: "male",
+    models: ["chatgpt", "gemini"],
+    tags: ["streetwear", "urban", "photo-edit"],
+    accent: "from-slate-500 to-slate-700",
+    notes: ATTACH,
+    body:
+      "Using the man in this photo, keep his face exactly the same and dress him in modern " +
+      "streetwear: an oversized black hoodie, cargo pants, chunky sneakers and a silver chain. " +
+      "He stands on a city rooftop at dusk, the skyline lit up behind him. Moody blue hour " +
+      "light, a subtle flash on him, editorial streetwear lookbook photography, low angle.",
+  },
+  {
+    id: "cyberpunk-rider",
+    title: "Cyberpunk Rider",
+    summary: "Neon-lit motorbike in a futuristic city",
+    category: "fantasy",
+    audience: "male",
+    models: ["chatgpt", "gemini"],
+    tags: ["cyberpunk", "neon", "photo-edit"],
+    accent: "from-fuchsia-500 to-cyan-500",
+    notes: ATTACH,
+    body:
+      "Using the man in this photo, keep his face exactly the same. Put him on a futuristic " +
+      "motorbike in a rain-soaked cyberpunk city at night, wearing a black techwear jacket " +
+      "with glowing cyan seams. Neon signs in pink and teal reflected on the wet street, " +
+      "light rain, cinematic wide shot, high contrast.",
+  },
+  {
+    id: "mountain-explorer",
+    title: "Mountain Explorer",
+    summary: "Adventure shot at the summit",
+    category: "portrait",
+    audience: "male",
+    models: ["chatgpt", "gemini"],
+    tags: ["adventure", "outdoor", "photo-edit"],
+    accent: "from-teal-500 to-blue-700",
+    notes: ATTACH,
+    body:
+      "Using the man in this photo, keep his face exactly the same. Show him standing on a " +
+      "rocky summit above a sea of clouds at sunrise, wearing a red technical jacket and a " +
+      "backpack, wind in his hair, looking out at the view. Epic adventure photography, " +
+      "golden light, crisp detail, wide-angle lens.",
+  },
+  {
+    id: "comic-hero-cover",
+    title: "Comic Book Hero Cover",
+    summary: "You on the cover of a retro comic",
+    category: "art",
+    audience: "male",
+    models: ["chatgpt", "gemini"],
+    tags: ["comic", "illustration", "photo-edit"],
+    accent: "from-rose-500 to-orange-600",
+    notes: `${ATTACH} Put your own hero name in the brackets.`,
+    body:
+      "Redraw the man in this photo as the hero on the cover of a vintage 1960s comic book. " +
+      "Keep his face recognisable. A dynamic flying pose in an original costume with a flowing " +
+      "cape, the title [THE NIGHT GUARDIAN] in bold retro lettering, halftone dot shading, " +
+      "bright primary colours, a price box in the corner, worn paper texture.",
+  },
+  {
+    id: "bagan-balloon-couple",
+    title: "Bagan Balloons at Sunrise",
+    summary: "A couple watching hot-air balloons over the temples",
+    category: "portrait",
+    audience: "couple",
+    models: ["chatgpt", "gemini"],
+    tags: ["myanmar", "travel", "photo-edit"],
+    accent: "from-amber-700 to-yellow-900",
+    notes: `${ATTACH} Use a photo where both faces are clearly visible.`,
+    body:
+      "Using the couple in this photo, keep both of their faces exactly the same. Place them " +
+      "sitting close together on top of an ancient temple in Bagan at sunrise, wrapped in one " +
+      "blanket, watching dozens of hot-air balloons drift over the misty plain dotted with " +
+      "pagodas. Warm golden light, soft haze, romantic travel photography, shot from behind " +
+      "and slightly to the side.",
+  },
+  {
+    id: "rainy-umbrella-anime-couple",
+    title: "Rainy Day Anime Couple",
+    summary: "Sharing an umbrella in a hand-painted anime scene",
+    category: "anime",
+    audience: "couple",
+    models: ["chatgpt", "gemini"],
+    tags: ["anime", "romantic", "photo-edit"],
+    accent: "from-sky-400 to-indigo-600",
+    notes: ATTACH,
+    body:
+      "Redraw the couple in this photo as a scene from a hand-painted anime film. Keep their " +
+      "hairstyles and recognisable features. They share one clear umbrella on a quiet street " +
+      "after school, light rain, puddles reflecting warm shop lights, cherry blossom petals " +
+      "on the wet pavement, soft watercolour backgrounds, gentle and nostalgic mood.",
+  },
+  {
+    id: "myanmar-wedding-preshoot",
+    title: "Myanmar Wedding Pre-Shoot",
+    summary: "Traditional wedding outfits in a royal palace setting",
+    category: "fashion",
+    audience: "couple",
+    models: ["chatgpt", "gemini"],
+    tags: ["myanmar", "wedding", "photo-edit"],
+    accent: "from-rose-500 to-orange-600",
+    notes: `${ATTACH} Both faces should be clearly visible and well lit.`,
+    body:
+      "Using the couple in this photo, keep both faces exactly the same. Dress them in " +
+      "traditional Myanmar wedding attire: the bride in an ivory and gold silk htamein with an " +
+      "embroidered jacket and gold jewellery, the groom in a white taikpon with a gold " +
+      "patterned paso and gaung baung. Pose them in a carved teak palace hall with gilded " +
+      "pillars, soft warm lighting, elegant wedding photography.",
+  },
+  {
+    id: "cozy-winter-couple",
+    title: "Cosy Winter Cabin",
+    summary: "Matching sweaters by a crackling fireplace",
+    category: "portrait",
+    audience: "couple",
+    models: ["chatgpt", "gemini"],
+    tags: ["winter", "cozy", "photo-edit"],
+    accent: "from-amber-700 to-yellow-900",
+    notes: ATTACH,
+    body:
+      "Using the couple in this photo, keep both faces exactly the same. Put them in a wooden " +
+      "cabin on a snowy evening, wearing matching knitted sweaters, sharing a blanket on the " +
+      "sofa with mugs of hot chocolate. A crackling fireplace, fairy lights, snow falling " +
+      "outside the window, warm candid lifestyle photography.",
+  },
+  {
+    id: "chibi-sticker",
+    title: "Chibi Sticker of You",
+    summary: "A cute die-cut sticker with a big head",
+    category: "art",
+    audience: "any",
+    models: ["chatgpt", "gemini"],
+    tags: ["chibi", "sticker", "photo-edit"],
+    accent: "from-fuchsia-500 to-cyan-500",
+    notes: `${ATTACH} Change the pose in the brackets — waving, peace sign, holding coffee.`,
+    body:
+      "Turn the person in this photo into a cute chibi sticker. Keep their hairstyle, glasses " +
+      "and outfit colours so it is clearly them. Big head, small body, [waving happily], " +
+      "simple flat colours with soft shading, a thick white die-cut border, on a plain white " +
+      "background.",
+  },
+  {
+    id: "isometric-dream-room",
+    title: "Isometric Dream Room",
+    summary: "A tiny 3D room you could hold in your hand",
+    category: "3d",
+    audience: "any",
+    models: ["midjourney", "flux", "chatgpt"],
+    tags: ["isometric", "cute", "text-to-image"],
+    accent: "from-sky-400 to-indigo-600",
+    notes: "Text only. Describe the room you want in the brackets.",
+    body:
+      "A cute isometric 3D diorama of [a cosy gamer bedroom with a desk, glowing monitor, " +
+      "plants and a cat asleep on the bed], cut-away walls, soft clay render, pastel colours, " +
+      "warm lamp light, tiny detailed props, centred on a plain background --ar 1:1",
+  },
+  {
+    id: "mohinga-breakfast",
+    title: "Steaming Bowl of Mohinga",
+    summary: "Myanmar's favourite breakfast, food-magazine style",
+    category: "food",
+    audience: "any",
+    models: ["midjourney", "flux", "chatgpt"],
+    tags: ["myanmar", "food", "text-to-image"],
+    accent: "from-amber-700 to-yellow-900",
+    notes: "Text only.",
+    body:
+      "A steaming bowl of Myanmar mohinga, rice noodles in a rich golden fish and lemongrass " +
+      "broth, topped with crispy fritters, a sliced boiled egg, fresh coriander and a wedge " +
+      "of lime, on a wooden table at an early-morning street stall, soft morning light, " +
+      "rising steam, food magazine photography, shallow depth of field --ar 4:5",
+  },
+  {
+    id: "golden-retriever-astronaut",
+    title: "Golden Retriever Astronaut",
+    summary: "A very good boy floating in space",
+    category: "animals",
+    audience: "any",
+    models: ["midjourney", "flux", "leonardo"],
+    tags: ["dog", "space", "text-to-image"],
+    accent: "from-sky-400 to-indigo-600",
+    notes: "Text only. Swap in your own pet's breed.",
+    body:
+      "A golden retriever in a white astronaut suit with a glass helmet, floating weightless " +
+      "inside a space station, Earth visible through the round window behind it, tongue out " +
+      "and happy, soft cinematic lighting, highly detailed, photorealistic --ar 3:2",
+  },
+  {
+    id: "tropical-modern-villa",
+    title: "Tropical Modern Villa",
+    summary: "Concrete, glass and palms by an infinity pool",
+    category: "architecture",
+    audience: "any",
+    models: ["midjourney", "flux", "stable-diffusion"],
+    tags: ["villa", "interior", "text-to-image"],
+    accent: "from-emerald-500 to-lime-700",
+    notes: "Text only.",
+    body:
+      "A modern tropical villa with board-formed concrete walls and floor-to-ceiling glass, an " +
+      "infinity pool reflecting palm trees, open-plan living area with teak furniture, lush " +
+      "jungle all around, late afternoon sun, architectural photography, wide angle " +
+      "--ar 16:9",
+  },
+  {
+    id: "luxury-perfume-shot",
+    title: "Luxury Perfume Shot",
+    summary: "Premium bottle on water with soft reflections",
+    category: "product",
+    audience: "any",
+    models: ["chatgpt", "gemini", "flux"],
+    tags: ["advertising", "luxury", "e-commerce"],
+    accent: "from-rose-500 to-orange-600",
+    notes: "Attach a photo of your product, or describe it in the brackets for text only.",
+    body:
+      "A premium advertising photo of [a square glass perfume bottle with a gold cap], standing " +
+      "on still water with gentle ripples, soft reflections, scattered rose petals floating " +
+      "nearby, a warm gradient background from peach to deep rose, glossy highlights, luxury " +
+      "commercial product photography, centred composition --ar 4:5",
+  },
 ];
 
 export function seedPrompts(): Prompt[] {

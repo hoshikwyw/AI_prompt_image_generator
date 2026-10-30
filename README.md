@@ -22,7 +22,7 @@ npm run dev
 ```
 
 No keys, no database, no setup. The collection lives in `web/.data/collection.json`, seeded on
-first run with 17 example prompts covering every category and audience. To share it instead, see
+first run with 39 example prompts covering every category and audience. To share it instead, see
 [Going shared](#going-shared).
 
 ## What it does
