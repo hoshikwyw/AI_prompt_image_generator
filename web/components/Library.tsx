@@ -112,6 +112,22 @@ export default function Library({
     const frozen = prompts.map((p) => ({ ...p, copies: loadedCopies.get(p.id) ?? p.copies }));
     return filterPrompts(frozen, filter).map((p) => live.get(p.id)!);
   }, [prompts, filter, loadedCopies]);
+
+  // A filter for women or for Gemini also keeps the prompts that suit anyone
+  // or any tool. Mixed into one grid, "Women" showed 13 cards of which 3 were
+  // for women, and every audience looked the same — as if the filter did
+  // nothing. The real matches come first; the rest get their own heading.
+  const audience = filter.audience && filter.audience !== "all" ? filter.audience : null;
+  const model = filter.model ?? null;
+  const isExact = (p: Prompt) => (!audience || p.audience === audience) && (!model || p.models.includes(model));
+  const exact = audience || model ? visible.filter(isExact) : visible;
+  const general = audience || model ? visible.filter((p) => !isExact(p)) : [];
+  // "for women", "for Midjourney", "for women in Midjourney".
+  const exactLabel = audience
+    ? `for ${AUDIENCE_LABELS[audience].toLowerCase()}${model ? ` in ${AI_TOOL_LABELS[model]}` : ""}`
+    : `for ${model ? AI_TOOL_LABELS[model] : ""}`;
+  const generalLabel =
+    audience && model ? "for everyone or any AI" : audience ? "for everyone" : "for any AI";
   // Counts stay whole-collection so chips do not vanish as you narrow.
   const tags = useMemo(() => tagCounts(prompts), [prompts]);
   const shownTags = allTagsShown ? tags : tags.slice(0, TAGS_COLLAPSED);
@@ -203,7 +219,7 @@ export default function Library({
     // Where keyboard focus is, by card position, in case this patch filters
     // the card out — unstarring in the Favourites view. Its button then
     // vanished with focus on it, dropping the reader back to the page top.
-    const cards = Array.from(gridRef.current?.children ?? []);
+    const cards = Array.from(gridRef.current?.querySelectorAll("article") ?? []);
     const focusedAt = cards.findIndex((card) => card.contains(document.activeElement));
 
     setPrompts((list) =>
@@ -214,7 +230,7 @@ export default function Library({
     requestAnimationFrame(() => {
       if (document.activeElement && document.activeElement !== document.body) return;
       // The card that took its place, else the one before, else the count.
-      const now = gridRef.current?.children;
+      const now = gridRef.current?.querySelectorAll("article");
       const next = now?.[focusedAt] ?? now?.[focusedAt - 1];
       const target = next?.querySelector<HTMLElement>("a[href], button") ?? countRef.current;
       target?.focus();
@@ -238,6 +254,17 @@ export default function Library({
     Boolean(filter.model) ||
     Boolean(filter.tag) ||
     Boolean(filter.favoritesOnly);
+
+  const grid = (list: Prompt[]) => (
+    <CardGrid
+      prompts={list}
+      onPatch={patchPrompt}
+      onTagClick={(tag) => set({ tag: filter.tag === tag ? undefined : tag })}
+      canEdit={canEdit}
+      covers={covers}
+      highlight={filter.q}
+    />
+  );
 
   return (
     <div>
@@ -390,7 +417,9 @@ export default function Library({
                 <button
                   key={category}
                   type="button"
-                  onClick={() => set({ category })}
+                  // A second click undoes it, as a tag chip's does.
+                  onClick={() => set({ category: active ? "all" : category })}
+                  aria-pressed={active}
                   data-active={active}
                   className="chip"
                 >
@@ -433,9 +462,18 @@ export default function Library({
       <div className="mb-4 flex items-center justify-between gap-4 text-sm text-muted">
         {/* Announced as it changes, so a screen reader hears what a filter did. */}
         <span aria-live="polite" ref={countRef} tabIndex={-1} className="outline-none">
-          <strong className="font-medium text-foreground">{visible.length}</strong>
-          {visible.length !== prompts.length && <> of {prompts.length}</>}{" "}
-          {prompts.length === 1 ? "prompt" : "prompts"}
+          {audience || model ? (
+            <>
+              <strong className="font-medium text-foreground">{exact.length}</strong> {exactLabel}
+              {general.length > 0 && <> · {general.length} more {generalLabel}</>}
+            </>
+          ) : (
+            <>
+              <strong className="font-medium text-foreground">{visible.length}</strong>
+              {visible.length !== prompts.length && <> of {prompts.length}</>}{" "}
+              {prompts.length === 1 ? "prompt" : "prompts"}
+            </>
+          )}
         </span>
         {isFiltered && (
           <button
@@ -486,22 +524,60 @@ export default function Library({
           )}
         </div>
       ) : (
-        <div ref={gridRef} className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-3">
-          {visible.map((prompt) => (
-            <PromptCard
-              key={prompt.id}
-              prompt={prompt}
-              onChange={(patch) => patchPrompt(prompt.id, patch)}
-              onTagClick={(tag) => set({ tag: filter.tag === tag ? undefined : tag })}
-              canEdit={canEdit}
-              image={covers[prompt.id]}
-              highlight={filter.q}
-            />
-          ))}
+        <div ref={gridRef}>
+          {exact.length > 0 ? (
+            grid(exact)
+          ) : (
+            <p className="card border-dashed px-6 py-8 text-center text-sm text-muted">
+              No prompts {exactLabel} yet — here are ones {generalLabel}.
+            </p>
+          )}
+          {general.length > 0 && (
+            <section className="mt-10 sm:mt-12" aria-labelledby="general-heading">
+              <h2 id="general-heading" className="mb-4 flex items-baseline gap-2 text-sm font-medium">
+                Also {generalLabel}
+                <span className="font-normal text-subtle">{general.length}</span>
+              </h2>
+              {grid(general)}
+            </section>
+          )}
         </div>
       )}
 
       <BackToTop />
+    </div>
+  );
+}
+
+/** One grid of cards: the exact matches get one, and the ones for everyone another. */
+function CardGrid({
+  prompts,
+  onPatch,
+  onTagClick,
+  canEdit,
+  covers,
+  highlight,
+}: {
+  prompts: Prompt[];
+  onPatch: (id: string, patch: PromptPatch) => void;
+  onTagClick: (tag: string) => void;
+  canEdit: boolean;
+  covers: Record<string, PromptImage>;
+  highlight?: string;
+}) {
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-3">
+      {prompts.map((prompt) => (
+        <PromptCard
+          key={prompt.id}
+          prompt={prompt}
+          onChange={(patch) => onPatch(prompt.id, patch)}
+          onTagClick={onTagClick}
+          canEdit={canEdit}
+          image={covers[prompt.id]}
+          highlight={highlight}
+        />
+      ))}
     </div>
   );
 }
