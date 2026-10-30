@@ -37,15 +37,21 @@ const anon = createClient(url, anonKey, options);
 const admin = serviceKey ? createClient(url, serviceKey, options) : null;
 
 // --- tables, through the anon key, which is what page loads use -------------
+// Real GETs, never `head: true`: a HEAD request for a table that does not
+// exist comes back with no error and a null count, which this used to report
+// as "readable, null rows" on a project with no schema at all.
+let tablesExist = true;
 for (const table of ["prompts", "prompt_images"]) {
-  const { error, count } = await anon.from(table).select("*", { count: "exact", head: true });
-  if (error) fail(`table "${table}" unreadable with the anon key: ${error.message}`);
-  else ok(`table "${table}" readable, ${count} row${count === 1 ? "" : "s"}`);
+  const { error, count } = await anon.from(table).select("*", { count: "exact" }).limit(1);
+  if (error) {
+    tablesExist = false;
+    fail(`table "${table}" unreadable with the anon key: ${error.message}`);
+  } else ok(`table "${table}" readable, ${count} row${count === 1 ? "" : "s"}`);
 }
 
 // --- the audience/models migration has been applied -------------------------
 {
-  const { error } = await anon.from("prompts").select("audience, models", { head: true });
+  const { error } = await anon.from("prompts").select("audience, models").limit(1);
   if (error) {
     fail(
       `prompts has no audience/models columns (${error.message}) — ` +
@@ -62,15 +68,20 @@ const { error: writeError } = await anon
 if (!writeError) {
   fail("the anon key could INSERT — RLS is not restricting writes. Re-run the migration.");
   if (admin) await admin.from("prompts").delete().eq("id", probeId);
+} else if (writeError.code === "42501") {
+  ok("anon writes are blocked by row-level security");
+} else if (!tablesExist) {
+  // Refused because there is no table, which proves nothing about RLS.
+  fail("cannot test write protection until the tables exist — apply supabase/migrations first.");
 } else {
-  ok(`anon writes are blocked (${writeError.code ?? "rejected"})`);
+  warn(`anon insert was refused, but not by RLS (${writeError.code ?? "?"}: ${writeError.message})`);
 }
 
 // --- service role ----------------------------------------------------------
 if (!admin) {
   warn("SUPABASE_SERVICE_ROLE_KEY is not set — reads will work, writes will not.");
 } else {
-  const { error } = await admin.from("prompts").select("id", { head: true });
+  const { error } = await admin.from("prompts").select("id").limit(1);
   if (error) fail(`service_role key rejected: ${error.message}`);
   else ok("service_role key works");
 
