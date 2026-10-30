@@ -92,6 +92,9 @@ function imageFrom(interaction) {
   return null;
 }
 
+/** The key has no quota for this model: every later request would fail too. */
+class QuotaError extends Error {}
+
 async function generate(text, aspect, photo) {
   const input = photo
     ? [
@@ -102,7 +105,8 @@ async function generate(text, aspect, photo) {
   const body = {
     model,
     input,
-    response_format: { type: "image", mime_type: "image/png", image_size: "1K", ...(aspect && { aspect_ratio: aspect }) },
+    // JPEG: the only output this model accepts ("image/png" is a 400).
+    response_format: { type: "image", mime_type: "image/jpeg", image_size: "1K", ...(aspect && { aspect_ratio: aspect }) },
   };
 
   for (let attempt = 1; ; attempt++) {
@@ -118,9 +122,15 @@ async function generate(text, aspect, photo) {
       return Buffer.from(data, "base64");
     }
     const detail = (await res.json().catch(() => ({})))?.error?.message ?? res.statusText;
-    // Busy or rate-limited: wait and retry a few times before giving up.
+    // Out of quota, not just busy: a "limit: 0" free tier, or a wait of hours.
+    // Waiting would only hang the script, so stop and say what to do.
+    const retryAfter = Number(res.headers.get("retry-after")) * 1000;
+    if (res.status === 429 && (/limit: 0\b/.test(detail) || retryAfter > 120_000)) {
+      throw new QuotaError(detail);
+    }
+    // Busy or briefly rate-limited: wait and retry a few times before giving up.
     if ((res.status === 429 || res.status >= 500) && attempt < 4) {
-      const wait = Number(res.headers.get("retry-after")) * 1000 || attempt * 15_000;
+      const wait = retryAfter || attempt * 15_000;
       console.log(`    … ${res.status}, retrying in ${Math.round(wait / 1000)}s`);
       await sleep(wait);
       continue;
@@ -192,6 +202,13 @@ for (const prompt of chosen) {
   } catch (err) {
     console.log(`    failed: ${err.message}`);
     failed++;
+    if (err instanceof QuotaError) {
+      console.log(
+        "\nThis key has no image quota (Gemini's free tier allows none for image models)." +
+          "\nEnable billing for its project at https://ai.dev/rate-limit, then run this again.",
+      );
+      break;
+    }
   }
 }
 
